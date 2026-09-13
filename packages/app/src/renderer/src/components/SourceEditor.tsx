@@ -53,7 +53,10 @@ const highlightField = StateField.define<DecorationSet>({
           const endLine = doc.lineAt(Math.max(from, to - 1)).number;
           for (let l = startLine; l <= endLine; l++)
             ranges.push(highlightLine.range(doc.line(l).from));
-          if (to > from) ranges.push(highlightMark.range(from, to));
+          // Tint every line of the range, but outline only the first line's span so a
+          // block-level problem does not box each line of a long block.
+          const markTo = Math.min(to, doc.lineAt(from).to);
+          if (markTo > from) ranges.push(highlightMark.range(from, markTo));
           d = Decoration.set(ranges, true);
         }
       }
