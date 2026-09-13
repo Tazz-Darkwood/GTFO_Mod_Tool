@@ -1,0 +1,30 @@
+appId: dev.gtfo.datablockstudio
+electronVersion: 44.3.0
+productName: GTFO Datablock Studio
+copyright: MIT
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+extraResources:
+  # The compiled schema bundle + vanilla index, read by main via schemaLocator.ts
+  - from: ../schema/dist
+    to: schema
+    filter:
+      - '**/*.json'
+asar: true
+npmRebuild: false
+nodeGypRebuild: false
+win:
+  target:
+    - target: portable
+      arch: [x64]
+    - target: zip
+      arch: [x64]
+  artifactName: 'GTFO-Datablock-Studio-${version}-${os}-${arch}.${ext}'
+portable:
+  artifactName: 'GTFO-Datablock-Studio-${version}-portable.exe'
+publish: null

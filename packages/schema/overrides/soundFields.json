@@ -1,0 +1,17 @@
+{
+  "fields": [
+    "SoundEvent",
+    "SoundID",
+    "SoundId",
+    "AlarmSoundStart",
+    "AlarmSoundStop",
+    "SoundEventOnWarpToReality",
+    "SoundEventOnWarpTo",
+    "lineEvent",
+    "MusicEvent",
+    "SFXEvent",
+    "WwiseEvent"
+  ],
+  "patterns": ["^SFX_ID_", "Sound", "SFX", "Audio", "Wwise", "Foley", "Swish", "Charge"],
+  "classes": ["MeleeSFX", "EnemySFX", "WeaponAudio"]
+}

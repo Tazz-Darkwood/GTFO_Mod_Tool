@@ -1,0 +1,24 @@
+[
+  {
+    "weaponDetectionDistanceMin": 10,
+    "weaponDetectionDistanceMax": 50,
+    "detectionNodeDistanceMax": 2,
+    "movementDetectionDistance": 8,
+    "detectionBuildupSpeed": 2,
+    "detectionCooldownSpeed": 0.075,
+    "name": "DefaultDetection",
+    "internalEnabled": true,
+    "persistentID": 13
+  },
+  {
+    "weaponDetectionDistanceMin": 10,
+    "weaponDetectionDistanceMax": 50,
+    "detectionNodeDistanceMax": 2,
+    "movementDetectionDistance": 20,
+    "detectionBuildupSpeed": 2,
+    "detectionCooldownSpeed": 0.075,
+    "name": "LongerRangeDetection",
+    "internalEnabled": true,
+    "persistentID": 28
+  }
+]

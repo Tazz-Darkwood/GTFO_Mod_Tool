@@ -1,0 +1,7 @@
+{
+  "_comment": "ClassName.Field -> target datablock type, for UInt32 fields the TypeList does not annotate. Class names are canonical short names (no DataBlock suffix). Populate from the build report.",
+  "ItemPartData.ID": "ItemPart",
+  "SpecificPickupSpawnData.PickupToSpawn": "Item",
+  "WardenObjectiveEventData.EnemyID": "Enemy",
+  "WorldEventFromSourceData.EnemyID": "Enemy"
+}

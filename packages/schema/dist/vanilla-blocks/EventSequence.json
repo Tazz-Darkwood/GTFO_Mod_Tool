@@ -1,0 +1,22 @@
+[
+  {
+    "Actions": [
+      { "On": true, "Time": 1, "ActionID": 5 },
+      { "On": true, "Time": 3, "ActionID": 2 },
+      { "On": true, "Time": 7, "ActionID": 1 }
+    ],
+    "name": "Decontamination",
+    "internalEnabled": true,
+    "persistentID": 1
+  },
+  {
+    "Actions": [
+      { "On": true, "Time": 0, "ActionID": 3 },
+      { "On": true, "Time": 2, "ActionID": 4 },
+      { "On": true, "Time": 4, "ActionID": 1 }
+    ],
+    "name": "Apex Defend Event",
+    "internalEnabled": true,
+    "persistentID": 2
+  }
+]

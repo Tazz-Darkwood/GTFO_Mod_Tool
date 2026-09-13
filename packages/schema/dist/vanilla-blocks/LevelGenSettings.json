@@ -1,0 +1,68 @@
+[
+  {
+    "PublicName": "",
+    "ZoneMinSize": 20,
+    "ZoneMaxSize": 50,
+    "StartZoneSize": 25,
+    "SegmentZoneCount": 80,
+    "PublicEstimatedAreaCoverage": 30000,
+    "name": "Short",
+    "internalEnabled": true,
+    "persistentID": 1
+  },
+  {
+    "PublicName": "",
+    "ZoneMinSize": 20,
+    "ZoneMaxSize": 50,
+    "StartZoneSize": 25,
+    "SegmentZoneCount": 160,
+    "PublicEstimatedAreaCoverage": 50000,
+    "name": "Medium",
+    "internalEnabled": true,
+    "persistentID": 2
+  },
+  {
+    "PublicName": "",
+    "ZoneMinSize": 20,
+    "ZoneMaxSize": 50,
+    "StartZoneSize": 25,
+    "SegmentZoneCount": 240,
+    "PublicEstimatedAreaCoverage": 90000,
+    "name": "Long",
+    "internalEnabled": true,
+    "persistentID": 3
+  },
+  {
+    "PublicName": "",
+    "ZoneMinSize": 10,
+    "ZoneMaxSize": 25,
+    "StartZoneSize": 5,
+    "SegmentZoneCount": 30,
+    "PublicEstimatedAreaCoverage": 20000,
+    "name": "Very short",
+    "internalEnabled": true,
+    "persistentID": 5
+  },
+  {
+    "PublicName": "",
+    "ZoneMinSize": 10,
+    "ZoneMaxSize": 60,
+    "StartZoneSize": 60,
+    "SegmentZoneCount": 80,
+    "PublicEstimatedAreaCoverage": 5000,
+    "name": "Very short v2",
+    "internalEnabled": true,
+    "persistentID": 6
+  },
+  {
+    "PublicName": "",
+    "ZoneMinSize": 5,
+    "ZoneMaxSize": 32,
+    "StartZoneSize": 10,
+    "SegmentZoneCount": 100,
+    "PublicEstimatedAreaCoverage": 20000,
+    "name": "TGATrailer2018",
+    "internalEnabled": true,
+    "persistentID": 7
+  }
+]

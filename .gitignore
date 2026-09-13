@@ -1,0 +1,13 @@
+# test corpus (friend's mod profile) - never commit
+Time - Copy/
+
+node_modules/
+dist/
+!packages/schema/dist/
+packages/schema/.cache/
+packages/app/out/
+packages/app/release/
+*.log
+.DS_Store
+Thumbs.db
+*.gtfo-tmp-*

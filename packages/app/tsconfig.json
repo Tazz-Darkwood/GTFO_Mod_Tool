@@ -1,0 +1,12 @@
+{
+  "//": "Vite/esbuild read the nearest tsconfig.json for JSX settings; type-checking uses tsconfig.node.json and tsconfig.web.json.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "paths": { "@shared/*": ["./src/shared/*"], "@renderer/*": ["./src/renderer/src/*"] },
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "electron.vite.config.ts"]
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "EventsToTrigger": ["ThickFog", "EnemyWaveSpawn"],
+    "name": "FogAndWave",
+    "internalEnabled": true,
+    "persistentID": 1
+  }
+]
