@@ -36,12 +36,13 @@ jobs:
         run: npm run build -w packages/app
       - name: Package (portable exe + zip)
         run: npx electron-builder --win --config electron-builder.yml --projectDir packages/app --publish never
-      - name: Release notes file for the friend-facing zip
+      - name: Fill the version into the release notes
         shell: bash
-        run: cp "packages/app/release/bundle/READ ME FIRST.txt" packages/app/release/ 2>/dev/null || true
+        run: sed "s/<version>/${GITHUB_REF_NAME#v}/g" .github/RELEASE_NOTES.md > release-notes.md
       - uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: release-notes.md
+          generate_release_notes: false
           files: |
             packages/app/release/*.exe
             packages/app/release/*.zip

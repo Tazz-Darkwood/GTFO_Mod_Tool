@@ -6,26 +6,50 @@ import type {
   ClassSchema,
   Diagnostic,
   DiagnosticFix,
+  DimensionNode,
   EditOp,
   EnumSchema,
+  ExpeditionNode,
   FieldSchema,
   FileShape,
   JsonPath,
+  LayerNode,
+  LayoutDetail,
+  LinkNode,
+  ObjectiveDetail,
+  RundownNode,
+  RundownTree,
   TextRange,
+  Tier,
+  TierNode,
   TypeName,
+  WaveNode,
+  ZoneNode,
 } from '@gtfo/core';
 
 export type {
   ClassSchema,
   Diagnostic,
   DiagnosticFix,
+  DimensionNode,
   EditOp,
   EnumSchema,
+  ExpeditionNode,
   FieldSchema,
   FileShape,
   JsonPath,
+  LayerNode,
+  LayoutDetail,
+  LinkNode,
+  ObjectiveDetail,
+  RundownNode,
+  RundownTree,
   TextRange,
+  Tier,
+  TierNode,
   TypeName,
+  WaveNode,
+  ZoneNode,
 };
 
 export interface TypeSummaryDto {
@@ -174,6 +198,21 @@ export interface CreateBlockRequestDto {
   source: BlockSourceDto;
 }
 
+export type RundownOpDto =
+  | {
+      kind: 'addExpedition';
+      rundownBlockId: string;
+      tier: Tier;
+      prefix: string;
+      publicName: string;
+    }
+  | { kind: 'duplicateExpedition'; rundownBlockId: string; tier: Tier; index: number }
+  | { kind: 'moveExpedition'; rundownBlockId: string; from: Tier; index: number; to: Tier }
+  | { kind: 'deleteExpedition'; rundownBlockId: string; tier: Tier; index: number }
+  | { kind: 'addZone'; layoutBlockId: string }
+  | { kind: 'duplicateZone'; layoutBlockId: string; index: number }
+  | { kind: 'deleteZone'; layoutBlockId: string; index: number };
+
 export interface TargetFileDto {
   fileId: string;
   shape: FileShape;
@@ -234,6 +273,10 @@ export interface IpcApi {
     req: CreateBlockRequestDto,
   ) => Promise<(EditResultDto & { blockId: string }) | EditFailureDto>;
   'blocks:delete': (blockId: string) => Promise<EditResultDto | EditFailureDto>;
+  /** Rundown → tiers → expeditions → layers/zones navigator data; null when the project defines no Rundown block. */
+  'rundown:tree': () => Promise<RundownTree | null>;
+  /** Navigator mutations, each one undo step. */
+  'rundown:op': (op: RundownOpDto) => Promise<EditResultDto | EditFailureDto>;
   'diagnostics:list': (fileId?: string) => Promise<Diagnostic[]>;
   'edit:apply': (target: EditTargetDto, op: EditOp) => Promise<EditResultDto | EditFailureDto>;
   'edit:applyMany': (

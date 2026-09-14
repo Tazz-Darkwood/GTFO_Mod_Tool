@@ -1,4 +1,5 @@
 import { useStore } from '../store';
+import { AddExpeditionDialog } from './dialogs/AddExpeditionDialog';
 import { DeleteBlockDialog } from './dialogs/DeleteBlockDialog';
 import { DeleteFileDialog } from './dialogs/DeleteFileDialog';
 import { NewBlockDialog } from './dialogs/NewBlockDialog';
@@ -11,6 +12,8 @@ export function Dialogs() {
   switch (dialog.kind) {
     case 'newBlock':
       return <NewBlockDialog init={dialog} />;
+    case 'addExpedition':
+      return <AddExpeditionDialog rundownBlockId={dialog.rundownBlockId} tier={dialog.tier} />;
     case 'deleteBlock':
       return <DeleteBlockDialog blockId={dialog.blockId} />;
     case 'newFile':

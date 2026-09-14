@@ -1210,3 +1210,101 @@ button.primary.danger {
 .welcome-foot .link:hover {
   color: var(--accent);
 }
+
+/* ---- rundown navigator ---- */
+.rtree-row {
+  min-height: 26px;
+}
+.rtree-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rtree-rundown {
+  font-size: 13.5px;
+}
+.rtree-tier {
+  color: #c5cad3;
+  font-weight: 600;
+}
+.rtree-exp .rid {
+  min-width: 26px;
+  display: inline-block;
+}
+.rtree-disabled,
+.rtree-disabled .rid {
+  opacity: 0.55;
+}
+.rtree-disabled .rtree-disabled {
+  opacity: 1;
+}
+.rtree-missing {
+  border-left: 2px solid var(--error);
+}
+.rtree-alarm {
+  color: #f0c98a;
+}
+.rtree-toggle {
+  display: inline-flex;
+  align-items: center;
+}
+.rtree-toggle input {
+  margin: 0;
+}
+.rtree-linkwrap {
+  position: relative;
+}
+.rtree-picker {
+  position: relative;
+  z-index: 40;
+  padding: 4px 0 8px;
+}
+.rtree-picker .refpicker {
+  position: static;
+  width: min(440px, 100%);
+}
+.rtree-add {
+  cursor: pointer;
+}
+.rtree-inline {
+  font-size: 12px;
+  margin-left: 6px;
+}
+.rtree-row .frow-file-actions select.small {
+  font-size: 11px;
+  padding: 0 4px;
+}
+.list-item.frow-focus {
+  animation: flash 1.6s ease-out;
+  outline: 1px solid rgba(255, 196, 0, 0.7);
+}
+.chip.place {
+  margin-left: 8px;
+  opacity: 1;
+  font-size: 11px;
+  color: #b7a9ff;
+  border-color: #6d5ab8;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* header must never wrap: crumbs shrink, buttons stay on one line */
+.mainpane-head {
+  flex-wrap: nowrap;
+}
+.mainpane-head .crumbs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.mainpane-actions {
+  flex: 0 0 auto;
+}
+.mainpane-actions button {
+  white-space: nowrap;
+}
+.crumb-name {
+  min-width: 0;
+  flex: 0 1 auto;
+}

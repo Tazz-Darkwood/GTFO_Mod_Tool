@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { expeditionKey, expeditionLabel, placeOfBlock } from '../rundownLookup';
 import { useStore } from '../store';
 import { BlockEditor } from './BlockEditor';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -32,11 +33,15 @@ export function MainPane() {
   const setSourceDraft = useStore((s) => s.setSourceDraft);
   const openDialog = useStore((s) => s.openDialog);
   const selectBlock = useStore((s) => s.selectBlock);
+  const tree = useStore((s) => s.rundownTree);
+  const setSidebarTab = useStore((s) => s.setSidebarTab);
+  const expandMany = useStore((s) => s.expandMany);
 
   const fileDiags = useMemo(
     () => (raw ? diagnostics.filter((d) => d.file === raw.fileId) : []),
     [diagnostics, raw],
   );
+  const place = useMemo(() => (block ? placeOfBlock(tree, block.blockId) : null), [tree, block]);
 
   if (view === 'welcome' || !raw) {
     return (
@@ -78,6 +83,22 @@ export function MainPane() {
                   disabled={refCount === 0}
                 >
                   used by {refCount}
+                </button>
+              )}
+              {place && (
+                <button
+                  className="chip place"
+                  title="Show this block in the Rundown tree"
+                  onClick={() => {
+                    expandMany([
+                      `rd:${place.rundownId}`,
+                      `tier:${place.rundownId}:${place.expedition.tier}`,
+                      expeditionKey(place.rundownId, place.expedition),
+                    ]);
+                    setSidebarTab('rundown');
+                  }}
+                >
+                  in {expeditionLabel(place.expedition)} · {place.role}
                 </button>
               )}
             </>

@@ -732,7 +732,14 @@ function ListField(props: FieldProps) {
         <div className="list-items">
           {items.map((item, i) =>
             itemIsObject ? (
-              <div key={i} className="list-item">
+              <div
+                key={i}
+                className={`list-item ${focusPointer === pointerOf([...path, i]) ? 'frow-focus' : ''}`}
+                ref={(el) => {
+                  if (el && focusPointer === pointerOf([...path, i]))
+                    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                }}
+              >
                 <div className="list-item-head">
                   <button className="disclosure" onClick={() => setOpenItems((s) => toggle(s, i))}>
                     {openItems.has(i) ? '▾' : '▸'} #{i}

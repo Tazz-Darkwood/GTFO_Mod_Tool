@@ -29,6 +29,15 @@ import {
   reloadFromDisk,
   saveFile,
   suggestPersistentId,
+  buildRundownTree,
+  addExpeditionOps,
+  duplicateExpeditionOps,
+  moveExpeditionOps,
+  deleteExpeditionOps,
+  addZoneOps,
+  duplicateZoneOps,
+  deleteZoneOps,
+  type RundownTree,
   toFileId,
   valueOf,
   validateProject,
@@ -68,6 +77,7 @@ import type {
   SchemaClosureDto,
   TargetFileDto,
   TypeSummaryDto,
+  RundownOpDto,
 } from '@shared/ipc';
 
 type Emit = <K extends keyof IpcEvents>(event: K, payload: IpcEvents[K]) => void;
@@ -85,6 +95,7 @@ export class ProjectHost {
   private session?: EditSession;
   private watcher?: FSWatcher;
   private refIndex?: ReferenceIndex;
+  private tree?: RundownTree | null;
   /** absPath -> time we wrote it; used to ignore our own writes in the watcher. */
   private recentWrites = new Map<string, number>();
   private readonly fs: FileSystem;
@@ -116,6 +127,7 @@ export class ProjectHost {
 
   private invalidate(): void {
     this.refIndex = undefined;
+    this.tree = undefined;
   }
 
   private refs(): ReferenceIndex {
@@ -580,6 +592,42 @@ export class ProjectHost {
       const { session } = this.need();
       session.apply({ file: target.file, blockId: target.blockId }, op);
       return this.editResult(target.file, target.blockId);
+    } catch (e) {
+      return this.failure(e);
+    }
+  }
+
+  /** Navigator data, cached until the next edit/reload. Null when the project defines no Rundown block. */
+  rundownTree(): RundownTree | null {
+    if (this.tree === undefined) {
+      const t = buildRundownTree(this.need().project);
+      this.tree = t.rundowns.length ? t : null;
+    }
+    return this.tree;
+  }
+
+  rundownOp(op: RundownOpDto): EditResultDto | EditFailureDto {
+    try {
+      const { project, session } = this.need();
+      const plan =
+        op.kind === 'addExpedition'
+          ? addExpeditionOps(project, op.rundownBlockId, op.tier, {
+              prefix: op.prefix,
+              publicName: op.publicName,
+            })
+          : op.kind === 'duplicateExpedition'
+            ? duplicateExpeditionOps(project, op.rundownBlockId, op.tier, op.index)
+            : op.kind === 'moveExpedition'
+              ? moveExpeditionOps(project, op.rundownBlockId, op.from, op.index, op.to)
+              : op.kind === 'deleteExpedition'
+                ? deleteExpeditionOps(project, op.rundownBlockId, op.tier, op.index)
+                : op.kind === 'addZone'
+                  ? addZoneOps(project, op.layoutBlockId)
+                  : op.kind === 'duplicateZone'
+                    ? duplicateZoneOps(project, op.layoutBlockId, op.index)
+                    : deleteZoneOps(project, op.layoutBlockId, op.index);
+      session.applyMany(plan.target, plan.ops);
+      return this.editResult(plan.target.file, plan.target.blockId);
     } catch (e) {
       return this.failure(e);
     }

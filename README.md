@@ -31,6 +31,10 @@ Badges in the type list: **FILE** means a `GameData_<Type>DataBlock_bin.json` in
 
 Keyboard: `Ctrl+S` save file, `Ctrl+Shift+S` save all, `Ctrl+Z` / `Ctrl+Y` undo / redo, `Ctrl+F` find in the source view.
 
+### Rundown tab
+
+The first tab shows your rundown the way the game sees it: tiers → expeditions → main / secondary / third layer → layout (with every zone), objective (with its alarms and waves) and dimensions. Problem counts roll up so a level with a broken reference shows a red badge all the way up to the tier. Click anything to open it; click a zone to land on that zone in the layout form. Hover a row for actions: **+** on a tier adds an expedition, **⧉** duplicates, **⇄** moves to another tier, **✕** deletes, the checkbox enables or disables. On any link (layout, objective, alarm, wave): **pick** an existing block, **new** creates one and links it in one step, **✕** unlinks. **+ zone** appends a zone; each zone row has **alarm**, **⧉** and **✕**. Everything here is undoable with Ctrl+Z until you save.
+
 ### Editing
 
 - **Form** shows a block as typed fields. **Source** is a real editor for the whole file: type freely, problems update about half a second after you stop, and JSON syntax errors are underlined immediately. Broken JSON is never applied or saved; fix the underline first.

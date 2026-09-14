@@ -256,4 +256,40 @@ describe.skipIf(!existsSync(corpus))('ProjectHost against the corpus', () => {
     );
     expect(r.ok).toBe(false);
   });
+  it('serves the rundown tree and refreshes it after edits', () => {
+    const tree = host.rundownTree()!;
+    expect(tree.rundowns[0]!.name).toBe('Time');
+    const exps = tree.rundowns[0]!.tiers.flatMap((t) => t.expeditions);
+    expect(exps).toHaveLength(13);
+    const a1 = exps.find((e) => e.prefix === 'A1')!;
+    const layoutId = a1.layers[0]!.layout!.blockId!;
+    const zonesBefore = (a1.layers[0]!.layout!.detail as { zones: unknown[] }).zones.length;
+    const r = host.rundownOp({ kind: 'addZone', layoutBlockId: layoutId });
+    expect(r.ok).toBe(true);
+    const after = host
+      .rundownTree()!
+      .rundowns[0]!.tiers.flatMap((t) => t.expeditions)
+      .find((e) => e.prefix === 'A1')!;
+    expect((after.layers[0]!.layout!.detail as { zones: unknown[] }).zones.length).toBe(
+      zonesBefore + 1,
+    );
+    const file = host.blockDetail(layoutId)!.file;
+    expect(host.undo(file)?.ok).toBe(true);
+    expect(
+      (
+        host
+          .rundownTree()!
+          .rundowns[0]!.tiers.flatMap((t) => t.expeditions)
+          .find((e) => e.prefix === 'A1')!.layers[0]!.layout!.detail as { zones: unknown[] }
+      ).zones.length,
+    ).toBe(zonesBefore);
+    const bad = host.rundownOp({
+      kind: 'moveExpedition',
+      rundownBlockId: tree.rundowns[0]!.blockId,
+      from: 'A',
+      index: 0,
+      to: 'A',
+    });
+    expect(bad.ok).toBe(false);
+  });
 });

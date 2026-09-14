@@ -1,13 +1,12 @@
 /**
  * Reverse reference index: which blocks point at (type, persistentID)?
- * Built by a schema walk over every non-plugin block; gates are ignored on
+ * Built from `collectRefs` over every non-plugin block; gates are ignored on
  * purpose so a reference inside a disabled layer still counts for deletion
  * warnings. Plugin config files are scanned with a plain regex as "mentions".
  */
 import type { BlockId, FileId, JsonPath, Project, TextRange, TypeName } from '../model/types.js';
-import { blockClass } from '../schema/schemaBundle.js';
-import { lineIndexFor, rangeOf } from '../text/jsoncDoc.js';
-import { walkObject } from '../validate/walk.js';
+import { lineIndexFor } from '../text/jsoncDoc.js';
+import { collectRefs } from './outgoing.js';
 
 export interface Reference {
   /** The referring block. */
@@ -34,65 +33,30 @@ export interface PluginMention {
 
 export type ReferenceIndex = Map<string, Reference[]>;
 
-const TEXT_TYPE = 'Text';
-
 export function refKey(type: TypeName, id: number): string {
   return `${type}:${id}`;
 }
 
 export function buildReferenceIndex(project: Project): ReferenceIndex {
   const index: ReferenceIndex = new Map();
-  const add = (key: string, ref: Reference) => {
-    const list = index.get(key);
-    if (list) list.push(ref);
-    else index.set(key, [ref]);
-  };
   for (const block of project.index.byId.values()) {
-    if (block.plugin || !block.type) continue;
-    const cls = blockClass(project.schema, block.type);
-    if (!cls) continue;
-    const file = project.files.get(block.file);
-    if (!file) continue;
-    const li = lineIndexFor(file, file.text);
-    walkObject(
-      project.schema,
-      cls,
-      block.node,
-      block.path,
-      {
-        onValue(v) {
-          if (v.node.type !== 'number') return;
-          const id = v.node.value as number;
-          if (id === 0 || id === -1) return;
-          let target: TypeName | undefined;
-          let via: Reference['via'] = 'ref';
-          if (v.field.kind === 'ref') target = v.field.refType;
-          else if (v.field.kind === 'localizedText') {
-            target = TEXT_TYPE;
-            via = 'localizedText';
-          }
-          if (!target) return;
-          const last = v.path[v.path.length - 1];
-          const field =
-            typeof last === 'number'
-              ? `item of ${String(v.path[v.path.length - 2] ?? '')}`
-              : String(last ?? '');
-          add(refKey(target, id), {
-            blockId: block.id,
-            file: block.file,
-            type: block.type,
-            persistentID: block.persistentID,
-            name: block.name,
-            path: v.path,
-            field,
-            range: rangeOf(v.node, li),
-            via,
-          });
-        },
-      },
-      { pluginObject: false },
-      { applyGates: false },
-    );
+    for (const hit of collectRefs(project, block)) {
+      const key = refKey(hit.targetType, hit.id);
+      const ref: Reference = {
+        blockId: block.id,
+        file: block.file,
+        type: block.type,
+        persistentID: block.persistentID,
+        name: block.name,
+        path: hit.path,
+        field: hit.field,
+        range: hit.range,
+        via: hit.via,
+      };
+      const list = index.get(key);
+      if (list) list.push(ref);
+      else index.set(key, [ref]);
+    }
   }
   return index;
 }

@@ -139,7 +139,10 @@ export function NewBlockDialog({ init }: { init: Init }) {
   const submit = async () => {
     if (!canSubmit || !source) return;
     setBusy(true);
-    const ok = await createBlock({ type, targetFile: target, persistentID: id, name, source });
+    const ok = await createBlock(
+      { type, targetFile: target, persistentID: id, name, source },
+      init.then,
+    );
     setBusy(false);
     if (!ok) return;
   };

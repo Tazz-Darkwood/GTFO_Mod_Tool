@@ -19,7 +19,8 @@ GTFO Datablock Studio: validator + typed editor for MTFO datablock JSON. npm wor
 
 ## Where things live
 
-- `packages/core/src`: `text/` JSONC parsing + style; `project/` shapes, block extraction, loader; `index/` block index + baseline resolution; `schema/`; `validate/` rules (`ruleCodes.ts` is the list); `edit/` span-exact text edits + `EditSession`; `io/` fs abstraction, atomic write, save guard
+- `packages/core/src`: `text/` JSONC parsing + style; `project/` shapes, block extraction, loader, block/file/expedition op builders; `index/` block index, baseline resolution, reverse references (`references.ts`/`outgoing.ts`), navigator tree (`rundownTree.ts`); `schema/`; `validate/` rules (`ruleCodes.ts` is the list); `edit/` span-exact text edits + `EditSession`; `io/` fs abstraction, atomic write, save guard
+- Release notes shown on GitHub releases come from `.github/RELEASE_NOTES.md` (update it before tagging; `<version>` is substituted)
 - `packages/schema/build`: TypeList compiler; `overrides/*.json` are hand-curated corrections (reference targets, sound fields, open/flag enums)
 - `packages/app/src`: `main/projectHost.ts` (façade + DTOs), `shared/ipc.ts` (typed contract), `renderer/src/store.ts` (zustand), `renderer/src/editor/` (form fields)
 

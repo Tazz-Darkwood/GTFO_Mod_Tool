@@ -1,6 +1,6 @@
 {
   "name": "@gtfo/core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Domain library: parse, index, validate and edit GTFO datablock JSON",
