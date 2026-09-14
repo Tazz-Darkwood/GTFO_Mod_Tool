@@ -14,7 +14,13 @@ import type {
   FileShape,
   JsonPath,
   LayerNode,
+  ExpeditionMatch,
   LayoutDetail,
+  LayoutTile,
+  LgTileOverride,
+  LgTunerConfig,
+  LgTunerPrefabs,
+  LgZoneOverride,
   LinkNode,
   ObjectiveDetail,
   RundownNode,
@@ -39,7 +45,13 @@ export type {
   FileShape,
   JsonPath,
   LayerNode,
+  ExpeditionMatch,
   LayoutDetail,
+  LayoutTile,
+  LgTileOverride,
+  LgTunerConfig,
+  LgTunerPrefabs,
+  LgZoneOverride,
   LinkNode,
   ObjectiveDetail,
   RundownNode,
@@ -213,6 +225,23 @@ export type RundownOpDto =
   | { kind: 'duplicateZone'; layoutBlockId: string; index: number }
   | { kind: 'deleteZone'; layoutBlockId: string; index: number };
 
+/** The tiles the game generated for one layout, read from LGTuner's lines in BepInEx/LogOutput.log. */
+export interface LayoutGeneratedDto {
+  tiles: LayoutTile[];
+  source: {
+    /** Absolute path of the log. */
+    file: string;
+    mtimeMs: number;
+    /** Which load in the log (0-based) and how many there were. */
+    loadIndex: number;
+    loadCount: number;
+    lineStart: number;
+    /** Best expedition guess for that load. */
+    expedition?: ExpeditionMatch;
+    hint?: string;
+  };
+}
+
 export interface UpdateInfoDto {
   current: string;
   latest: string;
@@ -290,6 +319,16 @@ export interface IpcApi {
   'rundown:tree': () => Promise<RundownTree | null>;
   /** Zone data of one LevelLayout block (graph view), null when the block is not a layout. */
   'layout:detail': (layoutBlockId: string) => Promise<LayoutDetail | null>;
+  /** Generated tiles of a layout from the latest matching level load in BepInEx/LogOutput.log; null when no log/load. */
+  'layout:generated': (layoutBlockId: string) => Promise<LayoutGeneratedDto | null>;
+  /** The LGTuner config targeting a layout (first file when several), or null. */
+  'lgtuner:config': (layoutBlockId: string) => Promise<LgTunerConfig | null>;
+  /** Prefab paths for pickers: vanilla ComplexResourceSet lists + paths already used in the mod. */
+  'lgtuner:prefabs': () => Promise<LgTunerPrefabs>;
+  /** Create Custom/LGTuner/<layout>.json (immediate, like files:create). */
+  'lgtuner:create': (
+    layoutBlockId: string,
+  ) => Promise<{ ok: true; file: FileDto; summary: ProjectSummaryDto } | EditFailureDto>;
   /** Navigator mutations, each one undo step. */
   'rundown:op': (op: RundownOpDto) => Promise<EditResultDto | EditFailureDto>;
   'diagnostics:list': (fileId?: string) => Promise<Diagnostic[]>;

@@ -13,20 +13,21 @@ Free and open source. If it saves you time, you can [buy the developer a coffee 
 
 ### What the problems mean
 
-| Code            | Meaning                                                                                                             | What to do                                                                                                     |
-| --------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **B001**        | A PartialData block has no `"datablock": "<Type>"` field, so MTFO skips it. Anything pointing at it is broken too.  | Click **Fix**; the tool adds the type it can infer from the file.                                              |
-| **D001**        | Two blocks of the same type share a persistentID. Only one loads.                                                   | Give one of them a new ID and update whatever referenced it.                                                   |
-| **R001**        | A field points at an ID that no block has (project or vanilla).                                                     | Pick the right block with the picker. If the message says _swapped fields?_, the ID exists under another type. |
-| **E001**        | Not a named value of that enum. Strings are errors; numbers are warnings because the game reads the raw int.        | Check the spelling, or leave a number you know the game accepts.                                               |
-| **E002**        | Enum name is right except for letter case.                                                                          | Click **Fix**.                                                                                                 |
-| **T001 / T002** | Wrong JSON type (e.g. `"5"` instead of `5`).                                                                        | Click **Fix** for quoted numbers.                                                                              |
-| **T003**        | The game does not know this field on this type; it is ignored.                                                      | Usually a typo or a field on the wrong object (e.g. `WardenIntel` inside a wave entry).                        |
-| **T004**        | Field name differs only by letter case.                                                                             | Cosmetic in most cases.                                                                                        |
-| **D002**        | Your partial block replaces a vanilla block with the same ID.                                                       | Fine if intended.                                                                                              |
-| **W001**        | A wrapper file's `LastPersistentID` is lower than its highest block ID.                                             | Click **Fix**.                                                                                                 |
-| **P001**        | The file is not valid JSON.                                                                                         | Open it in a text editor; the location is in the message.                                                      |
-| **P003**        | A trailing comma (`[1, 2,]` or `{ "a": 1, }`). Valid JSONC, but the game's reader throws and skips the whole block. | Click **Fix**. The Source view underlines them in red as you type.                                             |
+| Code            | Meaning                                                                                                                                                                                                  | What to do                                                                                                     |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **B001**        | A PartialData block has no `"datablock": "<Type>"` field, so MTFO skips it. Anything pointing at it is broken too.                                                                                       | Click **Fix**; the tool adds the type it can infer from the file.                                              |
+| **D001**        | Two blocks of the same type share a persistentID. Only one loads.                                                                                                                                        | Give one of them a new ID and update whatever referenced it.                                                   |
+| **R001**        | A field points at an ID that no block has (project or vanilla).                                                                                                                                          | Pick the right block with the picker. If the message says _swapped fields?_, the ID exists under another type. |
+| **E001**        | Not a named value of that enum. Strings are errors; numbers are warnings because the game reads the raw int.                                                                                             | Check the spelling, or leave a number you know the game accepts.                                               |
+| **E002**        | Enum name is right except for letter case.                                                                                                                                                               | Click **Fix**.                                                                                                 |
+| **T001 / T002** | Wrong JSON type (e.g. `"5"` instead of `5`).                                                                                                                                                             | Click **Fix** for quoted numbers.                                                                              |
+| **T003**        | The game does not know this field on this type; it is ignored.                                                                                                                                           | Usually a typo or a field on the wrong object (e.g. `WardenIntel` inside a wave entry).                        |
+| **T004**        | Field name differs only by letter case.                                                                                                                                                                  | Cosmetic in most cases.                                                                                        |
+| **D002**        | Your partial block replaces a vanilla block with the same ID.                                                                                                                                            | Fine if intended.                                                                                              |
+| **W001**        | A wrapper file's `LastPersistentID` is lower than its highest block ID.                                                                                                                                  | Click **Fix**.                                                                                                 |
+| **P001**        | The file is not valid JSON.                                                                                                                                                                              | Open it in a text editor; the location is in the message.                                                      |
+| **P003**        | A trailing comma (`[1, 2,]` or `{ "a": 1, }`). Valid JSONC, but the game's reader throws and skips the whole block.                                                                                      | Click **Fix**. The Source view underlines them in red as you type.                                             |
+| **L001–L005**   | LGTuner config problems: a tile overridden twice (LGTuner keeps the first), `LevelLayoutID` that is no layout, a zone override for a zone the layout lacks, two files for one layout, a misspelt option. | Click **Fix** where offered; otherwise follow the message.                                                     |
 
 Badges in the type list: **FILE** means a `GameData_<Type>DataBlock_bin.json` in your folder replaces the vanilla blocks of that type; **VANILLA** means the game's own blocks are the baseline and your PartialData blocks are added on top.
 
@@ -46,6 +47,17 @@ A LevelLayout block has a third view beside Form and Source: **Graph**. Every zo
 - **Drag a box onto another zone** to make it build from that zone; the file keeps its `"Zone_3"` or `3` style. Dropping a box on empty space sets its `StartExpansion` to the direction it now lies from its parent. Dropping onto a zone that builds from the dragged one is refused (it would loop).
 - Wheel to zoom, drag the background to pan, **fit** to see everything. Layouts opened from the Rundown tab start in Graph mode; the **graph** action on a layout row opens it directly.
 - Everything is undoable with Ctrl+Z until you save.
+
+### Tiles mode (level layouts, with LGTuner)
+
+Beside Graph there is **Tiles**: the level as a top-down grid, east to the right, north up, (0,0) the starting tile. Two layers:
+
+- **Generated**: the tiles the game actually built the last time the level was loaded. [LGTuner](https://thunderstore.io/c/gtfo/p/hirnukuono/LGTuner/) writes one line per placed tile to `BepInEx\LogOutput.log`; the tool reads that file (found next to your `plugins` folder), matches the load to your expedition, and colours each cell by zone with the prefab that stands there. Load the level once with LGTuner installed, then press **⟳ log**. The banner says which load and when it came from; the log only keeps the latest game session.
+- **Overrides**: the layout's `Custom\LGTuner\*.json` TileOverrides drawn on top, with rotation arrow, geomorph, altitude and plug marks.
+
+Click a cell to see both and to edit the override in the panel on the right: **+ override this tile** adds an entry, the fields have pickers for geomorph and plug prefabs (the game's own plus every path already used in your mod; free text is allowed for custom packs), **✕ remove** deletes it. **Zone overrides** (per-zone geomorph, altitude and plug lists) are edited below. **+ LGTuner file for this layout** creates the file when there is none. Everything is undoable until you save; comments in the file survive.
+
+The Tiles view exists thanks to LGTuner by hirnukuono, based on Flowaria's LGTuner: the tool uses its file format and its log line, nothing more, and LGTuner must be installed for the overrides to do anything in game.
 
 ### Editing
 
@@ -80,6 +92,13 @@ The corpus tests look for a sample rundown at `../Time - Copy/BepInEx/plugins/Ma
 
 Releasing: bump the version in the `package.json` files, commit, then `git tag v<version> && git push && git push origin v<version>` (plain `--follow-tags` skips lightweight tags). The Release workflow builds the Windows portable exe and attaches it to a GitHub release.
 
-Unattended checks: `GTFO_OPEN=<folder> GTFO_NAV_CODE=R001 GTFO_AUTO_FIX=B001 GTFO_AUTO_EDIT="old=>new" GTFO_SCREENSHOT=out.png npx electron packages/app` opens a project, applies a fix, jumps to a problem (or `GTFO_NAV_CODE=file:<path>` opens a file, `tab:rundown:A1` expands an expedition, `graph:A1[:3[:addLeft]]` opens a layout's graph, selects a zone and adds one off it; several codes separated by commas run in order), types a replacement into the source editor, optionally folds the source (`GTFO_AUTO_FOLD=1|back`) and writes a screenshot.
+Unattended checks: `GTFO_OPEN=<folder> GTFO_NAV_CODE=R001 GTFO_AUTO_FIX=B001 GTFO_AUTO_EDIT="old=>new" GTFO_SCREENSHOT=out.png npx electron packages/app` opens a project, applies a fix, jumps to a problem (or `GTFO_NAV_CODE=file:<path>` opens a file, `tab:rundown:A1` expands an expedition, `graph:A1[:3[:addLeft]]` opens a layout's graph, selects a zone and adds one off it, `tiles:X4[:0_2]` opens the tile grid and selects a cell; several codes separated by commas run in order), types a replacement into the source editor, optionally folds the source (`GTFO_AUTO_FOLD=1|back`) and writes a screenshot.
 
-Schema data comes from [UntiIted/OriginalDataBlocks](https://github.com/UntiIted/OriginalDataBlocks). Thanks to the GTFO modding community for MTFO, PartialData and the wiki.
+## Thanks
+
+This tool only edits other people's formats; the credit for the formats is theirs.
+
+- **LGTuner** by [hirnukuono](https://thunderstore.io/c/gtfo/p/hirnukuono/LGTuner/), based on Flowaria's [LGTuner](https://github.com/GTFO-Modding/LGTuner): the tile override format and the per-tile log line behind the Tiles view.
+- **MTFO** and **MTFO.Ext.PartialData** by dakkhuza, Flowaria and the GTFO modding community: the datablock and PartialData file formats this tool reads and writes.
+- **OriginalDataBlocks** by [UntiIted](https://github.com/UntiIted/OriginalDataBlocks) and contributors: the datablock schema (TypeList) and the vanilla data.
+- The GTFO modding wiki and everyone who documented the datablocks.

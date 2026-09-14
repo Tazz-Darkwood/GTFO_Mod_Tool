@@ -256,6 +256,29 @@ describe.skipIf(!existsSync(corpus))('ProjectHost against the corpus', () => {
     );
     expect(r.ok).toBe(false);
   });
+  it('reads the generated tiles of X4 from the BepInEx log and its LGTuner file', async () => {
+    const tree = host.rundownTree()!;
+    const x4 = tree.rundowns[0]!.tiers.flatMap((t) => t.expeditions).find(
+      (e) => e.prefix === 'X4',
+    )!;
+    const main = x4.layers[0]!.layout!.blockId!;
+    const gen = await host.layoutGenerated(main);
+    expect(gen).not.toBeNull();
+    expect(gen!.source.expedition).toMatchObject({ prefix: 'X4', score: 12 });
+    expect(gen!.source.hint).toBe('X4 : Slot Machine 2.0');
+    expect(gen!.tiles.length).toBeGreaterThan(0);
+    expect(gen!.tiles.every((t) => t.dimension === 'Reality' && !t.ambiguous)).toBe(true);
+    // A layout of another expedition has no load in this log.
+    const a1 = tree.rundowns[0]!.tiers.flatMap((t) => t.expeditions).find(
+      (e) => e.prefix === 'A1',
+    )!;
+    expect(await host.layoutGenerated(a1.layers[0]!.layout!.blockId!)).toBeNull();
+    const cfg = host.lgtunerConfig(main);
+    expect(cfg).not.toBeNull();
+    expect(cfg!.layoutBlockId).toBe(main);
+    expect(host.lgtunerConfig(a1.layers[0]!.layout!.blockId!)).toBeNull();
+  });
+
   it('serves the rundown tree and refreshes it after edits', () => {
     const tree = host.rundownTree()!;
     expect(tree.rundowns[0]!.name).toBe('Time');

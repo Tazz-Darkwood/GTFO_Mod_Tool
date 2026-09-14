@@ -9,7 +9,7 @@ GTFO Datablock Studio: validator + typed editor for MTFO datablock JSON. npm wor
 - `npm run schema:build -- --no-fetch` — regenerate `packages/schema/dist` from the cached OriginalDataBlocks clone (omit `--no-fetch` to pull)
 - `npm run validate -- "<folder>"` — CLI validator; `npx tsx packages/cli/src/tool.ts fix|set …`
 - `npm run build -w packages/app && npx electron packages/app` — run the desktop app; `npm run dist -w packages/app` — portable exe
-- Visual check without a mouse: `GTFO_OPEN=… GTFO_NAV_CODE=R001|file:<path>|tab:rundown[:A1]|graph:A1[:zone[:addLeft]] GTFO_AUTO_FIX=B001 GTFO_AUTO_EDIT="old=>new" GTFO_AUTO_FOLD=1|back GTFO_SCREENSHOT=x.png [GTFO_SCREENSHOT_DELAY=ms] npx electron packages/app` (several NAV codes separated by commas run in order; redirect output to a file)
+- Visual check without a mouse: `GTFO_OPEN=… GTFO_NAV_CODE=R001|file:<path>|tab:rundown[:A1]|graph:A1[:zone[:addLeft]]|tiles:X4[:x_z] GTFO_AUTO_FIX=B001 GTFO_AUTO_EDIT="old=>new" GTFO_AUTO_FOLD=1|back GTFO_SCREENSHOT=x.png [GTFO_SCREENSHOT_DELAY=ms] npx electron packages/app` (several NAV codes separated by commas run in order; redirect output to a file)
 
 ## Releasing
 
@@ -19,7 +19,7 @@ GTFO Datablock Studio: validator + typed editor for MTFO datablock JSON. npm wor
 
 ## Where things live
 
-- `packages/core/src`: `text/` JSONC parsing + style; `project/` shapes, block extraction, loader, block/file/expedition op builders; `index/` block index, baseline resolution, reverse references (`references.ts`/`outgoing.ts`), navigator tree (`rundownTree.ts`); `schema/`; `validate/` rules (`ruleCodes.ts` is the list); `edit/` span-exact text edits + `EditSession`; `io/` fs abstraction, atomic write, save guard
+- `packages/core/src`: `plugins/lgtuner.ts` (LGTuner config parse/prefabs/skeleton) + `logs/lgtunerLog.ts` (generated tiles from BepInEx/LogOutput.log); `text/` JSONC parsing + style; `project/` shapes, block extraction, loader, block/file/expedition op builders; `index/` block index, baseline resolution, reverse references (`references.ts`/`outgoing.ts`), navigator tree (`rundownTree.ts`); `schema/`; `validate/` rules (`ruleCodes.ts` is the list); `edit/` span-exact text edits + `EditSession`; `io/` fs abstraction, atomic write, save guard
 - Release notes shown on GitHub releases come from `.github/RELEASE_NOTES.md` (update it before tagging; `<version>` is substituted)
 - `packages/schema/build`: TypeList compiler; `overrides/*.json` are hand-curated corrections (reference targets, sound fields, open/flag enums)
 - `packages/app/src`: `main/projectHost.ts` (façade + DTOs), `shared/ipc.ts` (typed contract), `renderer/src/store.ts` (zustand), `renderer/src/editor/` (form fields)
@@ -31,3 +31,4 @@ GTFO Datablock Studio: validator + typed editor for MTFO datablock JSON. npm wor
 - A wrapper file (`GameData_<T>DataBlock_bin.json`) replaces vanilla for that type; PartialData adds on top. Keep `TypeResolution.baseline` semantics intact when touching rules.
 - Suppressions that keep the validator quiet on real data (vanilla-identical values, plugin events, gates, open enums) are documented in `docs/build-log.md`. Read it before changing rule behaviour.
 - Do not commit unless asked.
+- Credit other people's work wherever the tool uses it (README Thanks, Welcome screen, the view that uses it): LGTuner (hirnukuono / Flowaria), MTFO + PartialData, OriginalDataBlocks. `packages/app/src/shared/credits.ts` is the single list.

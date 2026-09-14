@@ -23,6 +23,11 @@ export const RULES = {
   E001: { severity: 'error', title: 'Value is not a member of the enum' },
   E002: { severity: 'warning', title: 'Enum name differs from the schema only by letter case' },
   W001: { severity: 'info', title: 'LastPersistentID is lower than the highest block ID' },
+  L001: { severity: 'error', title: 'LGTuner: tile overridden twice (X, Z)' },
+  L002: { severity: 'error', title: 'LGTuner: LevelLayoutID is not a layout' },
+  L003: { severity: 'warning', title: 'LGTuner: zone override for a zone the layout lacks' },
+  L004: { severity: 'warning', title: 'LGTuner: two files target the same layout' },
+  L005: { severity: 'error', title: 'LGTuner: value is not a valid option' },
 } as const satisfies Record<string, { severity: Severity; title: string }>;
 
 export type RuleCode = keyof typeof RULES;

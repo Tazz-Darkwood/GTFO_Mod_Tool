@@ -563,6 +563,12 @@ function LayerRows({
                   graph
                 </Act>
                 <Act
+                  title="Top-down tile grid (generated tiles from the BepInEx log + LGTuner overrides)"
+                  onClick={() => void goToLink(layout, 'tiles')}
+                >
+                  tiles
+                </Act>
+                <Act
                   title="Add a zone"
                   onClick={() =>
                     void rundownOp({ kind: 'addZone', layoutBlockId: layout.blockId! })

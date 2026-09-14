@@ -4,6 +4,12 @@ Download **GTFO-Datablock-Studio-<version>-portable.exe** below and run it. No i
 
 ### New in this release
 
+- **Tiles view.** A LevelLayout has a fourth view, **Tiles**: the level as a top-down grid (east right, north up, (0,0) the start). The ground layer is the level as the game actually built it the last time you loaded it, read from LGTuner's per-tile lines in `BepInEx\LogOutput.log` and matched to your expedition. On top: the layout's LGTuner tile overrides. Click a cell to add, edit or remove its override, with pickers for geomorph and plug prefabs (the game's own plus paths already used in your mod); zone overrides are edited below; **+ LGTuner file** creates one. Undoable until you save; comments survive.
+- **LGTuner checks.** Five new rules on `Custom\LGTuner` files: a tile overridden twice (LGTuner drops one), a `LevelLayoutID` that is no layout, a zone override for a zone the layout lacks, two files for one layout, and misspelt options (with a Fix). `Rotation` and `Direction` get dropdowns in the plugin form.
+- **Credits.** Thanks to LGTuner by hirnukuono (based on Flowaria's LGTuner) for the format and the log line that make the Tiles view possible; the README has a full Thanks section.
+
+### From 0.4.0
+
 - **Zone graph.** A LevelLayout now has a **Graph** view beside Form and Source: every zone is a box hanging off the zone it builds from, in its StartExpansion direction, sized by coverage, with alias, subcomplex, alarm, enemy groups, events and problem badges. Missing parents and build loops are drawn dashed red. Click a zone to edit it in the panel on the right (the full form for that zone), **+ zone from here** with a direction picker, duplicate, delete (with the list of zones that depend on it), pick the alarm. **Drag a zone onto another** to change what it builds from; drop it on empty space to change its direction. Wheel zooms, drag pans. Layouts opened from the Rundown tab start in Graph mode. It is a schematic of the build order, not the generated map.
 - **Back / Forward.** ◀ ▶ at the left of the header, Alt+←/→ or the mouse back button return you to where you were before a click moved you, including which zone or field was focused.
 - **Collapse all / Expand all work.** They folded only the root before; now every object and list folds, with the top-level keys left visible.

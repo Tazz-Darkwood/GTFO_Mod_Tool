@@ -99,6 +99,30 @@ export async function createProjectFile(
   return file;
 }
 
+/** Create a project file with given text (e.g. a plugin config skeleton). Immediate, like createProjectFile. */
+export async function createTextFile(
+  fs: FileSystem,
+  project: Project,
+  fileId: FileId,
+  text: string,
+  opts: CreateFileOptions,
+): Promise<SourceFile> {
+  if (!fileId || /^[\\/]|\.\.|[<>:"|?*]/.test(fileId)) throw new EditError('Invalid path');
+  if (!/\.jsonc?$/i.test(fileId)) throw new EditError('The file name must end in .json');
+  if (project.files.has(fileId)) throw new EditError('A file with that path already exists');
+  if (!isProjectFile(fileId)) throw new EditError('Files must live under PartialData/ or Custom/');
+  const style: TextStyle = opts.style ?? { eol: '\n', bom: false, indentUnit: '  ' };
+  const absPath =
+    project.rootPath + opts.sep + (opts.sep === '/' ? fileId : fileId.split('/').join(opts.sep));
+  if (await fs.stat(absPath)) throw new EditError('A file with that path already exists on disk');
+  const dir = absPath.slice(0, absPath.lastIndexOf(opts.sep));
+  await fs.mkdirp(dir);
+  await writeAtomic(fs, absPath, text, style);
+  const file = await readSourceFile(fs, project.rootPath, absPath, opts.sep);
+  addFileToProject(project, file);
+  return file;
+}
+
 export async function deleteProjectFile(
   fs: FileSystem,
   project: Project,

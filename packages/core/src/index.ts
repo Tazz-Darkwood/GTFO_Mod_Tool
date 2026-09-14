@@ -14,6 +14,8 @@ export * from './index/references.js';
 export * from './index/outgoing.js';
 export * from './index/rundownTree.js';
 export * from './project/expeditionOps.js';
+export * from './plugins/lgtuner.js';
+export * from './logs/lgtunerLog.js';
 export * from './schema/defaults.js';
 export * from './project/blockOps.js';
 export * from './project/fileOps.js';

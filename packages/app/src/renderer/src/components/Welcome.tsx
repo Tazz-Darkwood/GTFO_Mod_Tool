@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CREDITS } from '@shared/credits';
 import { api } from '../api';
 import { KOFI_URL, REPO_URL, openUrl } from '../links';
 import { useStore } from '../store';
@@ -62,6 +63,19 @@ export function Welcome() {
         <button className="link" onClick={() => openUrl(KOFI_URL)}>
           ☕ buy the developer a coffee
         </button>
+        .
+      </div>
+      <div className="welcome-credits muted">
+        Built on other people's work:{' '}
+        {Object.values(CREDITS).map((c, i) => (
+          <span key={c.name}>
+            {i > 0 && ' · '}
+            <button className="link" onClick={() => openUrl(c.url)} title={c.what}>
+              {c.name}
+            </button>{' '}
+            by {c.by}
+          </span>
+        ))}
         .
       </div>
     </div>

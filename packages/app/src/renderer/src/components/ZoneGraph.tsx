@@ -94,6 +94,7 @@ export function ZoneGraph() {
   const selectZone = useStore((s) => s.selectZone);
   const applyMany = useStore((s) => s.applyMany);
   const showToast = useStore((s) => s.showToast);
+  const lgtuner = useStore((s) => s.lgtuner);
 
   const graph = useMemo(() => (detail ? zoneGraphLayout(detail.zones) : null), [detail]);
   const host = useRef<HTMLDivElement>(null);
@@ -374,6 +375,7 @@ export function ZoneGraph() {
                       Z{z.alias}
                     </text>
                     <text x={n.w - 10} y={19} textAnchor="end" className="zg-sub">
+                      {lgtuner?.zoneOverrides.some((o) => o.localIndex === z.localIndex) ? '▦ ' : ''}
                       {z.geomorph ? '▣ ' : ''}
                       {z.subComplex.length > 12 && small
                         ? z.subComplex.slice(0, 11) + '…'

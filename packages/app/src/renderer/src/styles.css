@@ -1560,3 +1560,216 @@ button.linkish {
   cursor: pointer;
   font-size: inherit;
 }
+
+/* ---- Tile grid ---- */
+.tilegrid-split {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+.tilegrid {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+.tilegrid svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  user-select: none;
+}
+.tg-cell {
+  cursor: pointer;
+}
+.tg-ground {
+  fill: var(--bg-2);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.tg-cell:hover .tg-ground {
+  stroke: var(--fg-muted);
+}
+.tg-cell.start .tg-ground {
+  stroke: var(--warning);
+  stroke-width: 2;
+}
+.tg-cell.selected .tg-ground {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+.tg-cell.ambiguous .tg-ground {
+  stroke-dasharray: 4 3;
+}
+.tg-zone {
+  font: 700 12px var(--font);
+  fill: #fff;
+}
+.tg-prefab {
+  font: 10px var(--mono);
+  fill: rgba(255, 255, 255, 0.85);
+}
+.tg-start {
+  font: 600 10px var(--font);
+  fill: var(--warning);
+}
+.tg-override {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.tg-rot {
+  font: 700 28px var(--font);
+  fill: var(--accent);
+  opacity: 0.85;
+}
+.tg-ovgeo {
+  font: 600 10px var(--font);
+  fill: var(--accent);
+}
+.tg-alt {
+  font: 700 11px var(--font);
+  fill: var(--warning);
+}
+.tg-plug {
+  fill: var(--ok);
+}
+.tg-axes text {
+  font: 10px var(--mono);
+  fill: var(--fg-muted);
+}
+.tileinspector .ti-body {
+  padding: 0 10px;
+}
+.ti-section {
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--line);
+}
+.ti-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  margin-bottom: 4px;
+}
+.ti-prefab {
+  font-size: 11px;
+  word-break: break-all;
+  margin: 2px 0;
+}
+.ti-zone {
+  font-size: 12px;
+  padding: 1px 0;
+}
+.ti-foot {
+  margin-top: auto;
+  padding: 8px 10px;
+  font-size: 11px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---- Tile inspector forms / prefab picker ---- */
+.ti-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  flex-wrap: wrap;
+}
+.ti-label {
+  flex: 0 0 96px;
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+.ti-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ti-value select,
+.ti-geo select {
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.ti-right {
+  float: right;
+  margin-left: 6px;
+}
+.ti-title {
+  overflow: hidden;
+}
+.ti-small {
+  font-size: 11px;
+  margin-top: 4px;
+}
+.ti-zone {
+  padding: 6px 0;
+  border-top: 1px dashed var(--line);
+}
+.ti-zonehead {
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.ti-geo {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 2px 0;
+}
+.ti-geo .prefabpicker {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.prefabpicker {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.prefabpicker .cinput {
+  width: 100%;
+}
+.prefabpicker-list {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: 100%;
+  max-height: 260px;
+  overflow: auto;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.prefabpicker-item {
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prefabpicker-item.active,
+.prefabpicker-item:hover {
+  background: var(--accent-2);
+}
+.prefabpicker-more {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.welcome-credits {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.6;
+}

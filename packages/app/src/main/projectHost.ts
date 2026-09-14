@@ -31,6 +31,17 @@ import {
   suggestPersistentId,
   buildRundownTree,
   layoutDetailFor,
+  findBepInExLog,
+  lgtunerFor,
+  lgtunerPrefabs,
+  lgtunerSkeleton,
+  lgtunerFileIdFor,
+  createTextFile,
+  type LgTunerPrefabs,
+  matchLoad,
+  parseTileLog,
+  tilesForLayout,
+  type LgTunerConfig,
   addExpeditionOps,
   duplicateExpeditionOps,
   moveExpeditionOps,
@@ -80,6 +91,7 @@ import type {
   TargetFileDto,
   TypeSummaryDto,
   RundownOpDto,
+  LayoutGeneratedDto,
 } from '@shared/ipc';
 
 type Emit = <K extends keyof IpcEvents>(event: K, payload: IpcEvents[K]) => void;
@@ -610,6 +622,80 @@ export class ProjectHost {
 
   layoutDetail(layoutBlockId: string): LayoutDetail | null {
     return layoutDetailFor(this.need().project, layoutBlockId);
+  }
+
+  lgtunerPrefabs(): LgTunerPrefabs {
+    return lgtunerPrefabs(this.need().project);
+  }
+
+  async lgtunerCreate(
+    layoutBlockId: string,
+  ): Promise<{ ok: true; file: FileDto; summary: ProjectSummaryDto } | EditFailureDto> {
+    try {
+      const { project } = this.need();
+      const block = project.index.byId.get(layoutBlockId);
+      if (!block || block.type !== 'LevelLayout' || block.persistentID === undefined)
+        throw new Error('Not a LevelLayout block');
+      const fileId = lgtunerFileIdFor(project, layoutBlockId);
+      const abs = path.join(project.rootPath, ...fileId.split('/'));
+      this.recentWrites.set(abs, Date.now());
+      const file = await createTextFile(
+        this.fs,
+        project,
+        fileId,
+        lgtunerSkeleton(block.persistentID),
+        { sep: path.sep },
+      );
+      validateProject(project);
+      this.invalidate();
+      const summary = this.summary();
+      this.emit('project:changed', summary);
+      return { ok: true, file: this.fileDto(file), summary };
+    } catch (e) {
+      return this.failure(e);
+    }
+  }
+
+  lgtunerConfig(layoutBlockId: string): LgTunerConfig | null {
+    return lgtunerFor(this.need().project, layoutBlockId)[0] ?? null;
+  }
+
+  /** Latest level load in the BepInEx log whose expedition uses this layout. */
+  async layoutGenerated(layoutBlockId: string): Promise<LayoutGeneratedDto | null> {
+    const { project } = this.need();
+    const tree = this.rundownTree();
+    if (!tree) return null;
+    const logPath = await findBepInExLog(this.fs, project.rootPath, path.sep);
+    if (!logPath) return null;
+    const [st, text] = await Promise.all([this.fs.stat(logPath), this.fs.readFile(logPath)]);
+    const loads = parseTileLog(text);
+    for (let i = loads.length - 1; i >= 0; i--) {
+      const load = loads[i]!;
+      const best = matchLoad(project, tree, load)[0];
+      if (!best) continue;
+      const exp = tree.rundowns
+        .find((r) => r.id === best.rundownId)
+        ?.tiers.find((t) => t.tier === best.tier)
+        ?.expeditions.find((e) => e.index === best.index);
+      if (!exp) continue;
+      const uses =
+        exp.layers.some((l) => l.layout?.blockId === layoutBlockId) ||
+        exp.dimensions.some((d) => d.layout?.blockId === layoutBlockId);
+      if (!uses) continue;
+      return {
+        tiles: tilesForLayout(project, exp, load, layoutBlockId),
+        source: {
+          file: logPath,
+          mtimeMs: st?.mtimeMs ?? 0,
+          loadIndex: i,
+          loadCount: loads.length,
+          lineStart: load.lineStart,
+          expedition: best,
+          ...(load.expeditionHint ? { hint: load.expeditionHint } : {}),
+        },
+      };
+    }
+    return null;
   }
 
   rundownOp(op: RundownOpDto): EditResultDto | EditFailureDto {

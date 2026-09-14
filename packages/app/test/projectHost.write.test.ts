@@ -80,6 +80,30 @@ describe.skipIf(!existsSync(corpus))('ProjectHost file operations on a scratch c
     expect(host.summary().dirtyFiles).toEqual([]);
   });
 
+  it('creates an LGTuner file for a layout and reads it back as its config', async () => {
+    const tree = host.rundownTree()!;
+    const a1 = tree.rundowns[0]!.tiers.flatMap((t) => t.expeditions).find(
+      (e) => e.prefix === 'A1',
+    )!;
+    const layoutId = a1.layers[0]!.layout!.blockId!;
+    expect(host.lgtunerConfig(layoutId)).toBeNull(); // Custom/ was not copied into the scratch
+    const r = await host.lgtunerCreate(layoutId);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.file.id.startsWith('Custom/LGTuner/')).toBe(true);
+    const cfg = host.lgtunerConfig(layoutId)!;
+    expect(cfg).not.toBeNull();
+    expect(cfg.fileId).toBe(r.file.id);
+    expect(cfg.tileOverrides).toHaveLength(1);
+    expect(host.lgtunerPrefabs().geomorphs.length).toBeGreaterThan(200);
+    // A second one gets a numbered name.
+    const r2 = await host.lgtunerCreate(layoutId);
+    expect(r2.ok).toBe(true);
+    if (r2.ok) expect(r2.file.id).toMatch(/ \(2\)\.json$/);
+    const problems = host.diagnostics().filter((d) => d.code === 'L004');
+    expect(problems).toHaveLength(1);
+  });
+
   it('validates new file paths and wrapper uniqueness', async () => {
     expect((await host.createFile({ path: 'Custom/x.json', kind: 'partial-array' })).ok).toBe(
       false,

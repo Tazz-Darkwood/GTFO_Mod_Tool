@@ -17,6 +17,9 @@ import type {
   Tier,
   UpdateInfoDto,
   LayoutDetail,
+  LayoutGeneratedDto,
+  LgTunerConfig,
+  LgTunerPrefabs,
 } from '@shared/ipc';
 import { api } from './api';
 import { sourceEditor } from './editor/editorRegistry';
@@ -24,7 +27,7 @@ import { pointerOf } from './editor/schemaUtil';
 
 export type Severity = 'error' | 'warning' | 'info';
 export type MainView = 'welcome' | 'block' | 'file';
-export type BlockMode = 'form' | 'graph' | 'raw';
+export type BlockMode = 'form' | 'graph' | 'tiles' | 'raw';
 export type SidebarTab = 'rundown' | 'types' | 'files';
 
 /** After a block is created, write its new id into this reference field ("create and link"). */
@@ -140,6 +143,13 @@ interface State {
   focusPointer: string | null;
   /** Zone data of the selected LevelLayout block (graph mode); null for other blocks. */
   layoutDetail: LayoutDetail | null;
+  /** Tiles the game generated for the selected layout (from LGTuner's log lines), and its LGTuner file. */
+  layoutGenerated: LayoutGeneratedDto | null;
+  lgtuner: LgTunerConfig | null;
+  /** Prefab paths for the Tiles pickers (loaded on first use). */
+  lgtunerPrefabs: LgTunerPrefabs | null;
+  /** Selected cell in Tiles mode. */
+  selectedTile: { x: number; z: number } | null;
   /** Places the user navigated away from (Back) and returned from (Forward). */
   navBack: NavSpot[];
   navForward: NavSpot[];
@@ -183,8 +193,12 @@ interface State {
   setBlockMode(m: BlockMode): Promise<void>;
   /** Focus one zone of the selected layout without changing the view mode (graph click). */
   selectZone(index: number): void;
-  /** Fetch graph data for the selected block when it is a LevelLayout. */
+  /** Fetch graph/tile data for the selected block when it is a LevelLayout. */
   loadLayoutDetail(): Promise<void>;
+  selectTile(cell: { x: number; z: number } | null): void;
+  loadLgTunerPrefabs(): Promise<void>;
+  /** Create the LGTuner file for the selected layout and load it. */
+  createLgTuner(): Promise<void>;
   /** Remember the current place before moving somewhere else (no-op while Back/Forward runs). */
   recordNav(): void;
   toggleSeverity(s: Severity): void;
@@ -257,6 +271,10 @@ export const useStore = create<State>((set, get) => ({
   blockMode: 'form',
   focusPointer: null,
   layoutDetail: null,
+  layoutGenerated: null,
+  lgtuner: null,
+  lgtunerPrefabs: null,
+  selectedTile: null,
   navBack: [],
   navForward: [],
   sourceDraft: null,
@@ -308,6 +326,7 @@ export const useStore = create<State>((set, get) => ({
         dialog: null,
         navBack: [],
         navForward: [],
+        lgtunerPrefabs: null,
       });
       set({ expanded: {} });
       await get().reloadLists();
@@ -494,7 +513,8 @@ export const useStore = create<State>((set, get) => ({
       blockMode:
         block.plugin || block.fileShape === 'plugin' || !block.type
           ? 'raw'
-          : get().blockMode === 'graph' && block.type !== 'LevelLayout'
+          : (get().blockMode === 'graph' || get().blockMode === 'tiles') &&
+              block.type !== 'LevelLayout'
             ? 'form'
             : get().blockMode,
       references: null,
@@ -582,9 +602,34 @@ export const useStore = create<State>((set, get) => ({
   async loadLayoutDetail() {
     const b = get().block;
     if (b && b.type === 'LevelLayout' && get().view === 'block') {
-      const detail = await api.invoke('layout:detail', b.blockId);
-      if (get().block?.blockId === b.blockId) set({ layoutDetail: detail });
-    } else if (get().layoutDetail) set({ layoutDetail: null });
+      const [detail, generated, lgtuner] = await Promise.all([
+        api.invoke('layout:detail', b.blockId),
+        api.invoke('layout:generated', b.blockId).catch(() => null),
+        api.invoke('lgtuner:config', b.blockId).catch(() => null),
+      ]);
+      if (get().block?.blockId === b.blockId)
+        set({ layoutDetail: detail, layoutGenerated: generated, lgtuner });
+    } else if (get().layoutDetail || get().lgtuner || get().layoutGenerated)
+      set({ layoutDetail: null, layoutGenerated: null, lgtuner: null, selectedTile: null });
+  },
+  selectTile(cell) {
+    set({ selectedTile: cell });
+  },
+  async loadLgTunerPrefabs() {
+    const p = await api.invoke('lgtuner:prefabs');
+    set({ lgtunerPrefabs: p });
+  },
+  async createLgTuner() {
+    const b = get().block;
+    if (!b || b.type !== 'LevelLayout') return;
+    const r = await api.invoke('lgtuner:create', b.blockId);
+    if (!r.ok) {
+      get().showToast('error', r.error);
+      return;
+    }
+    set({ summary: r.summary });
+    await get().reloadLists();
+    get().showToast('info', `Created ${r.file.id}`);
   },
   toggleSeverity(s) {
     set((st) => ({ severityFilter: { ...st.severityFilter, [s]: !st.severityFilter[s] } }));
@@ -896,8 +941,9 @@ The new ${u.assetName} is downloaded next to the current exe, started, and this 
   async goToZone(layoutBlockId, index) {
     get().recordNav();
     await get().selectBlock(layoutBlockId);
-    // Stay in the graph when it is showing; otherwise the form lands on the zone.
-    const mode = get().blockMode === 'graph' ? 'graph' : 'form';
+    // Stay in the graph/tiles when showing; otherwise the form lands on the zone.
+    const cur = get().blockMode;
+    const mode = cur === 'graph' || cur === 'tiles' ? cur : 'form';
     set({ sidebarTab: 'rundown', focusPointer: pointerOf(['Zones', index]), blockMode: mode });
   },
 
@@ -1122,6 +1168,20 @@ export function wireEvents(): void {
                         });
                         useStore.getState().selectZone(next);
                       }
+                    }
+                  }
+          } else if (code.startsWith('tiles:')) {
+            // tiles:<prefix>[:x_z] — the expedition's main layout in Tiles mode (codes are comma-separated, so x_z).
+            const st = useStore.getState();
+            const [prefix, cell] = code.slice(6).split(':');
+            for (const rd of st.rundownTree?.rundowns ?? [])
+              for (const t of rd.tiers)
+                for (const e of t.expeditions)
+                  if (e.prefix === prefix && e.layers[0]?.layout?.blockId) {
+                    await st.goToLink(e.layers[0].layout, 'tiles');
+                    if (cell) {
+                      const [x, z] = cell.split('_').map(Number);
+                      useStore.getState().selectTile({ x: x ?? 0, z: z ?? 0 });
                     }
                   }
           } else if (code.startsWith('tab:rundown')) {

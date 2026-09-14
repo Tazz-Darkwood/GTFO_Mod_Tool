@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { CREDITS } from '@shared/credits';
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import type { IpcApi } from '@shared/ipc';
 import type { ProjectHost } from './projectHost.js';
@@ -47,6 +48,10 @@ export function registerIpc(host: ProjectHost, getWindow: () => BrowserWindow | 
   handle('blocks:delete', async (blockId) => host.deleteBlock(blockId));
   handle('rundown:tree', async () => host.rundownTree());
   handle('layout:detail', async (id) => host.layoutDetail(id));
+  handle('layout:generated', async (id) => host.layoutGenerated(id));
+  handle('lgtuner:config', async (id) => host.lgtunerConfig(id));
+  handle('lgtuner:prefabs', async () => host.lgtunerPrefabs());
+  handle('lgtuner:create', async (id) => host.lgtunerCreate(id));
   handle('rundown:op', async (op) => host.rundownOp(op));
   handle('diagnostics:list', async (fileId) => host.diagnostics(fileId));
   handle('edit:apply', async (target, op) => host.applyEdit(target, op));
@@ -77,8 +82,10 @@ export function registerIpc(host: ProjectHost, getWindow: () => BrowserWindow | 
     }
   });
   handle('app:openUrl', async (url) => {
-    // Only the project's own pages; never arbitrary URLs from file contents.
+    // Only the project's own pages and the credited projects; never arbitrary URLs from file contents.
+    const credited = Object.values(CREDITS).some((c) => c.url === url);
     if (
+      credited ||
       /^https:\/\/(ko-fi\.com\/tazzdarkwood|github\.com\/Tazz-Darkwood\/GTFO_Mod_Tool)(\/|$)/.test(
         url,
       )

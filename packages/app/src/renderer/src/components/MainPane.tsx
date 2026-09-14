@@ -5,6 +5,7 @@ import { BlockEditor } from './BlockEditor';
 import { ErrorBoundary } from './ErrorBoundary';
 import { SourceEditor } from './SourceEditor';
 import { ZoneGraph } from './ZoneGraph';
+import { TileGrid } from './TileGrid';
 import { GenericJsonEditor } from '../editor/GenericJsonEditor';
 import { sourceEditor } from '../editor/editorRegistry';
 
@@ -71,9 +72,11 @@ export function MainPane() {
     (file.shape === 'plugin' || file.shape === 'meta' || file.shape === 'unknown');
   const canGraph = canForm && block!.type === 'LevelLayout';
   const showGraph = canGraph && mode === 'graph';
-  const showForm = canForm && (mode === 'form' || (mode === 'graph' && !canGraph));
+  const showTiles = canGraph && mode === 'tiles';
+  const showForm =
+    canForm && (mode === 'form' || ((mode === 'graph' || mode === 'tiles') && !canGraph));
   const showGeneric = canGeneric && mode === 'form';
-  const showingSource = !showForm && !showGeneric && !showGraph;
+  const showingSource = !showForm && !showGeneric && !showGraph && !showTiles;
   const drafting = draft && draft.fileId === raw.fileId;
   const canSave = !!file?.dirty || !!(drafting && draft.pending);
   const refCount = references ? references.refs.length + references.mentions.length : null;
@@ -153,6 +156,15 @@ export function MainPane() {
                   title="Zones as a graph: what builds from what, in which direction"
                 >
                   Graph
+                </button>
+              )}
+              {canGraph && (
+                <button
+                  className={showTiles ? 'on' : ''}
+                  onClick={() => void setMode('tiles')}
+                  title="Top-down tile grid: what the game generated (from the BepInEx log) and LGTuner overrides"
+                >
+                  Tiles
                 </button>
               )}
               <button className={mode === 'raw' ? 'on' : ''} onClick={() => void setMode('raw')}>
@@ -261,9 +273,11 @@ export function MainPane() {
       </div>
       <div className="mainpane-body">
         <ErrorBoundary
-          resetKey={`${block?.blockId ?? raw.fileId}:${showGraph ? 'graph' : showForm ? 'form' : showGeneric ? 'generic' : 'raw'}`}
+          resetKey={`${block?.blockId ?? raw.fileId}:${showTiles ? 'tiles' : showGraph ? 'graph' : showForm ? 'form' : showGeneric ? 'generic' : 'raw'}`}
         >
-          {showGraph ? (
+          {showTiles ? (
+            <TileGrid />
+          ) : showGraph ? (
             <ZoneGraph />
           ) : showForm ? (
             <BlockEditor />

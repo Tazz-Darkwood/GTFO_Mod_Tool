@@ -1,4 +1,5 @@
 import { getNodeValue, parseTree } from 'jsonc-parser';
+import { LGTUNER_DIRECTIONS, LGTUNER_ROTATIONS } from '@shared/lgtunerEnums';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { EditOp, JsonPath, RefCandidateDto } from '@shared/ipc';
 import { api } from '../api';
@@ -33,6 +34,12 @@ const REF_KEYS: Record<string, string> = {
   FogSetting: 'FogSettings',
   FogSettings: 'FogSettings',
   DimensionData: 'Dimension',
+};
+
+/** Keys whose string values come from a known set (LGTuner config). */
+const ENUM_KEYS: Record<string, readonly string[]> = {
+  Rotation: LGTUNER_ROTATIONS,
+  Direction: LGTUNER_DIRECTIONS,
 };
 
 type Kind = 'string' | 'number' | 'boolean' | 'null' | 'object' | 'array';
@@ -333,6 +340,22 @@ function GValue({
             </button>
           ))}
         </div>
+      </GRow>
+    );
+  }
+  const enumOptions = kind === 'string' && keyName ? ENUM_KEYS[keyName] : undefined;
+  if (enumOptions) {
+    const cur = String(value);
+    const opts = enumOptions.includes(cur) ? enumOptions : [cur, ...enumOptions];
+    return (
+      <GRow label={label} badge="enum" actions={remove}>
+        <select value={cur} onChange={(e) => void ctx.apply({ op: 'set', path, value: e.target.value })}>
+          {opts.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
       </GRow>
     );
   }

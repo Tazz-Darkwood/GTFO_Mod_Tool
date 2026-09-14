@@ -13,6 +13,7 @@ import { RULES, type RuleCode } from './ruleCodes.js';
 import { checkBlockShape } from './rules/blockShape.js';
 import { checkDuplicates } from './rules/duplicates.js';
 import { checkBlockContent } from './rules/content.js';
+import { checkLgTuner } from './rules/lgtuner.js';
 
 export interface DiagnosticInput {
   code: RuleCode;
@@ -79,6 +80,7 @@ export function validateProject(project: Project): Diagnostic[] {
   }
 
   checkDuplicates(project, r);
+  checkLgTuner(project, r);
 
   r.out.sort((a, b) =>
     a.file < b.file ? -1 : a.file > b.file ? 1 : (a.range?.offset ?? 0) - (b.range?.offset ?? 0),
