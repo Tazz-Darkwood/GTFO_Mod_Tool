@@ -15,6 +15,7 @@ import type {
   RundownTree,
   TextRange,
   Tier,
+  UpdateInfoDto,
 } from '@shared/ipc';
 import { api } from './api';
 import { sourceEditor } from './editor/editorRegistry';
@@ -90,6 +91,11 @@ interface State {
   references: ReferencesDto | null;
   dialog: Dialog | null;
 
+  update: UpdateInfoDto | null;
+  updateProgress: { received: number; total: number } | null;
+  updating: boolean;
+  appVersion: string;
+
   rundownTree: RundownTree | null;
   rundownFilter: string;
   /** Expanded navigator nodes by key ("rd:666", "tier:666:A", "exp:666:A:0", "zones:<blockId>"). */
@@ -125,6 +131,10 @@ interface State {
   setSourceDraft(fileId: string, pending: boolean, parseErrors: number): void;
   applyEdit(op: EditOp): Promise<boolean>;
   applyMany(ops: EditOp[]): Promise<boolean>;
+  /** One op against a whole file (schema-less plugin config); path is from the file root. */
+  applyFileOp(fileId: string, op: EditOp): Promise<boolean>;
+  checkUpdate(): Promise<void>;
+  installUpdate(): Promise<void>;
   applyFix(fix: DiagnosticFix): Promise<boolean>;
   undo(): Promise<void>;
   redo(): Promise<void>;
@@ -183,6 +193,10 @@ export const useStore = create<State>((set, get) => ({
   sourceDraft: null,
   references: null,
   dialog: null,
+  update: null,
+  updateProgress: null,
+  updating: false,
+  appVersion: '',
   rundownTree: null,
   rundownFilter: '',
   expanded: {},
@@ -497,6 +511,56 @@ export const useStore = create<State>((set, get) => ({
     set({ summary: r.summary });
     await get().reloadLists();
     return true;
+  },
+
+  async applyFileOp(fileId, op) {
+    await get().flushSource();
+    const r = await api.invoke('edit:apply', { file: fileId }, op);
+    if (!r.ok) {
+      get().showToast('error', r.error);
+      return false;
+    }
+    set({ summary: r.summary });
+    await get().reloadLists();
+    return true;
+  },
+
+  async checkUpdate() {
+    const [version, update] = await Promise.all([
+      api.invoke('app:version'),
+      api.invoke('update:check'),
+    ]);
+    set({ appVersion: version, update });
+  },
+
+  async installUpdate() {
+    const u = get().update;
+    if (!u || get().updating) return;
+    const dirty = get().summary?.dirtyFiles.length ?? 0;
+    if (
+      dirty &&
+      !confirm(
+        `You have ${dirty} unsaved file(s). Updating restarts the app; unsaved changes are lost. Continue?`,
+      )
+    )
+      return;
+    if (
+      u.canInstall &&
+      !confirm(
+        `Update to ${u.latest}?
+
+The new ${u.assetName} is downloaded next to the current exe, started, and this window closes. You can delete the old exe afterwards.`,
+      )
+    )
+      return;
+    set({ updating: true, updateProgress: { received: 0, total: u.assetSize ?? 0 } });
+    const r = await api.invoke('update:install', u);
+    if (!r.ok) {
+      set({ updating: false, updateProgress: null });
+      get().showToast('error', `Update failed: ${r.error}`);
+    } else if (!u.canInstall) {
+      set({ updating: false, updateProgress: null });
+    }
   },
 
   async applyMany(ops) {
@@ -828,6 +892,8 @@ export function wireEvents(): void {
     );
   });
   api.on('project:error', ({ message }) => useStore.getState().showToast('error', message));
+  api.on('update:progress', (p) => useStore.setState({ updateProgress: p }));
+  setTimeout(() => void useStore.getState().checkUpdate(), 2500);
   // Unattended-check hooks set by the main process (GTFO_OPEN, GTFO_NAV_CODE, GTFO_AUTO_FIX).
   const w = window as unknown as {
     __gtfoAutoOpen?: string;

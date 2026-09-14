@@ -1308,3 +1308,25 @@ button.primary.danger {
   min-width: 0;
   flex: 0 1 auto;
 }
+
+/* ---- generic JSON form / update button ---- */
+.gjson-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 8px;
+  font-size: 12px;
+}
+.gjson-add input,
+.gjson-add select {
+  padding: 1px 6px;
+  font-size: 12px;
+}
+button.update {
+  background: #2f6b55;
+  border-color: #2f6b55;
+  color: #fff;
+}
+button.update:hover:not(:disabled) {
+  border-color: #7fd7b7;
+}

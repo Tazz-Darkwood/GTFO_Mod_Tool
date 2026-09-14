@@ -12,6 +12,9 @@ export interface SourceEditorHandle {
   hasFocus(): boolean;
   pending(): boolean;
   parseErrors(): number;
+  /** Fold every foldable region; with `keepRoot` the top-level object/array stays open so its keys remain visible. */
+  foldAll(keepRoot: boolean): void;
+  unfoldAll(): void;
   /** Test hook: replace the first occurrence of `find` as if the user typed it. Returns false when not found. */
   debugReplace(find: string, replace: string): boolean;
 }

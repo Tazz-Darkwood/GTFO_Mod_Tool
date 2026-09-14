@@ -1,6 +1,6 @@
 {
   "name": "@gtfo/cli",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "Command-line validator and editor for GTFO datablock rundown folders",

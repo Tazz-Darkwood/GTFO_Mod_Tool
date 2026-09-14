@@ -9,9 +9,13 @@ import {
 import { json } from '@codemirror/lang-json';
 import {
   bracketMatching,
+  foldAll,
   foldGutter,
+  foldable,
   indentOnInput,
   syntaxHighlighting,
+  unfoldAll,
+  unfoldEffect,
 } from '@codemirror/language';
 import { lintGutter, setDiagnostics, type Diagnostic as CmDiagnostic } from '@codemirror/lint';
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
@@ -273,6 +277,17 @@ export function SourceEditor(p: SourceEditorProps) {
       hasFocus: () => v.hasFocus,
       pending,
       parseErrors: () => st.current.parseErrors,
+      foldAll: (keepRoot) => {
+        foldAll(v);
+        if (keepRoot) {
+          // Re-open the document's root container so the top-level keys stay visible.
+          const first = v.state.doc.line(1);
+          const range = foldable(v.state, first.from, first.to);
+          if (range) v.dispatch({ effects: unfoldEffect.of(range) });
+        }
+        v.dispatch({ effects: EditorView.scrollIntoView(0) });
+      },
+      unfoldAll: () => unfoldAll(v),
       debugReplace: (find, replace) => {
         const i = v.state.doc.toString().indexOf(find);
         if (i < 0) return false;

@@ -1,8 +1,9 @@
 import { spawn } from 'node:child_process';
-import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import type { IpcApi } from '@shared/ipc';
 import type { ProjectHost } from './projectHost.js';
 import { loadRecent, pushRecent } from './recent.js';
+import { checkForUpdate, downloadAndLaunch } from './updater.js';
 
 type Handler<K extends keyof IpcApi> = (...args: Parameters<IpcApi[K]>) => ReturnType<IpcApi[K]>;
 
@@ -55,6 +56,25 @@ export function registerIpc(host: ProjectHost, getWindow: () => BrowserWindow | 
   handle('file:save', (fileId, force) => host.save(fileId, force));
   handle('file:saveAll', () => host.saveAll());
   handle('file:revert', (fileId) => host.revert(fileId));
+  handle('app:version', async () => app.getVersion());
+  handle('update:check', async () => {
+    try {
+      return await checkForUpdate();
+    } catch {
+      return null;
+    }
+  });
+  handle('update:install', async (info) => {
+    try {
+      const p = await downloadAndLaunch(info, (received, total) => {
+        for (const w of BrowserWindow.getAllWindows())
+          w.webContents.send('update:progress', { received, total });
+      });
+      return { ok: true as const, path: p };
+    } catch (e) {
+      return { ok: false as const, error: (e as Error).message };
+    }
+  });
   handle('app:openUrl', async (url) => {
     // Only the project's own pages; never arbitrary URLs from file contents.
     if (

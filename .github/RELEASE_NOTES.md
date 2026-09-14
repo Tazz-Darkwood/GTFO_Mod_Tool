@@ -4,9 +4,14 @@ Download **GTFO-Datablock-Studio-<version>-portable.exe** below and run it. No i
 
 ### New in this release
 
+- **Plugin config gets a form.** Files under `Custom\` (EOS, AWO, LGTuner, …) open in a generic form: every value editable by its JSON type, add/remove fields and list items, and known keys like `MainLevelLayout` shown as datablock pickers. Source view is one click away.
+- **Collapse all / Expand all** in the Source view, so long files can be scanned and searched (Ctrl+F opens folds at matches).
+- **Update button.** From this version on, when a newer release exists an **⬆ Update** button appears top-right. It downloads the new exe next to this one, starts it and closes this window; delete the old exe afterwards.
+
+### From 0.3.0
+
 - **Rundown tab**: your rundown as tiers → expeditions → layouts, objectives, zones, with problem counts rolled up per level. Click a zone to land on it in the form.
 - **Build levels from the tree**: add / duplicate / move / delete expeditions, enable or disable layers, add / duplicate / delete zones, and on every link (layout, objective, alarm, wave) **pick** an existing block, **new** to create and link in one step, or unlink.
-- App icon, and releases are now built by GitHub Actions from a tag.
 
 ### From 0.2.0
 

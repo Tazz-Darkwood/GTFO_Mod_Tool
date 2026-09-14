@@ -38,7 +38,9 @@ The first tab shows your rundown the way the game sees it: tiers → expeditions
 ### Editing
 
 - **Form** shows a block as typed fields. **Source** is a real editor for the whole file: type freely, problems update about half a second after you stop, and JSON syntax errors are underlined immediately. Broken JSON is never applied or saved; fix the underline first.
-- **Files** tab (left): every file in the rundown, including plugin config under `Custom\` (EOS, AWO, LGTuner, …). Click to edit it as text. **+ file** creates a new PartialData list or a wrapper file.
+- **Files** tab (left): every file in the rundown, including plugin config under `Custom\` (EOS, AWO, LGTuner, …). Plugin files open in a generic form (every value editable by its JSON type, known keys such as `MainLevelLayout` shown as pickers) with a Source toggle. **+ file** creates a new PartialData list or a wrapper file.
+- **Collapse all / Expand all** in the Source view fold every object and list so a long file can be scanned; Ctrl+F searches and opens folds at matches.
+- **Update**: when a newer release exists on GitHub, an **⬆ Update to x.y.z** button appears top-right. It downloads the new portable exe next to the current one, starts it, and closes this one; delete the old exe afterwards.
 - **+ New** (above the block list) creates a block: blank from the schema, a copy of a vanilla block, a copy of one of yours, or from clipboard JSON. It suggests the next free ID and warns if the ID clashes.
 - **Duplicate** / **Delete** on a block (header buttons, or hover a row). Delete lists everything that references the block first. Deleting a block is undoable; deleting a file is not.
 - **used by N** on the block header lists the blocks that point at this one.

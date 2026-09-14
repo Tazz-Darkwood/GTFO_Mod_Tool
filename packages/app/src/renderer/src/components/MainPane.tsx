@@ -4,6 +4,8 @@ import { useStore } from '../store';
 import { BlockEditor } from './BlockEditor';
 import { ErrorBoundary } from './ErrorBoundary';
 import { SourceEditor } from './SourceEditor';
+import { GenericJsonEditor } from '../editor/GenericJsonEditor';
+import { sourceEditor } from '../editor/editorRegistry';
 
 const SHAPE_LABEL: Record<string, string> = {
   wrapper: 'wrapper file',
@@ -56,7 +58,15 @@ export function MainPane() {
   const file = files.find((f) => f.id === raw.fileId);
   const canForm =
     view === 'block' && !!block && !block.plugin && block.fileShape !== 'plugin' && !!block.type;
+  // Plugin config and other schema-less JSON get a generic form when opened as a file.
+  const canGeneric =
+    view === 'file' &&
+    !!file &&
+    file.parseErrors === 0 &&
+    (file.shape === 'plugin' || file.shape === 'meta' || file.shape === 'unknown');
   const showForm = canForm && mode === 'form';
+  const showGeneric = canGeneric && mode === 'form';
+  const showingSource = !showForm && !showGeneric;
   const drafting = draft && draft.fileId === raw.fileId;
   const canSave = !!file?.dirty || !!(drafting && draft.pending);
   const refCount = references ? references.refs.length + references.mentions.length : null;
@@ -112,7 +122,7 @@ export function MainPane() {
           )}
         </div>
         <div className="mainpane-actions">
-          {canForm && (
+          {(canForm || canGeneric) && (
             <div className="seg">
               <button className={mode === 'form' ? 'on' : ''} onClick={() => void setMode('form')}>
                 Form
@@ -160,6 +170,19 @@ export function MainPane() {
               + New block here
             </button>
           )}
+          {showingSource && (
+            <div className="seg">
+              <button
+                onClick={() => sourceEditor()?.foldAll(true)}
+                title="Collapse every object and list (top level stays open)"
+              >
+                Collapse all
+              </button>
+              <button onClick={() => sourceEditor()?.unfoldAll()} title="Expand everything">
+                Expand all
+              </button>
+            </div>
+          )}
           <button onClick={() => void undo()} title="Undo (Ctrl+Z)">
             ↶
           </button>
@@ -206,12 +229,16 @@ export function MainPane() {
           ''
         )}
         {file?.externallyModified ? <span className="sev-warning"> · CHANGED ON DISK</span> : ''}
-        {!showForm && fileDiags.length > 0 && ` · ${fileDiags.length} problem(s) in this file`}
+        {showingSource && fileDiags.length > 0 && ` · ${fileDiags.length} problem(s) in this file`}
       </div>
       <div className="mainpane-body">
-        <ErrorBoundary resetKey={`${block?.blockId ?? raw.fileId}:${showForm ? 'form' : 'raw'}`}>
+        <ErrorBoundary
+          resetKey={`${block?.blockId ?? raw.fileId}:${showForm ? 'form' : showGeneric ? 'generic' : 'raw'}`}
+        >
           {showForm ? (
             <BlockEditor />
+          ) : showGeneric ? (
+            <GenericJsonEditor fileId={raw.fileId} text={raw.text} />
           ) : (
             <SourceEditor
               fileId={raw.fileId}

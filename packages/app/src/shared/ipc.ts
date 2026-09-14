@@ -213,6 +213,19 @@ export type RundownOpDto =
   | { kind: 'duplicateZone'; layoutBlockId: string; index: number }
   | { kind: 'deleteZone'; layoutBlockId: string; index: number };
 
+export interface UpdateInfoDto {
+  current: string;
+  latest: string;
+  /** Release page. */
+  url: string;
+  assetName?: string;
+  assetUrl?: string;
+  assetSize?: number;
+  notes: string;
+  /** Packaged build with a portable exe asset available: one-click update is possible. */
+  canInstall: boolean;
+}
+
 export interface TargetFileDto {
   fileId: string;
   shape: FileShape;
@@ -292,6 +305,13 @@ export interface IpcApi {
   'file:openExternal': (fileId: string, line?: number) => Promise<void>;
   /** Open an allow-listed https URL in the system browser (project page, Ko-fi). */
   'app:openUrl': (url: string) => Promise<void>;
+  'app:version': () => Promise<string>;
+  /** Newer GitHub release than the running version, or null. */
+  'update:check': () => Promise<UpdateInfoDto | null>;
+  /** Download the new portable exe next to this one, launch it and quit (or open the release page when not installable). */
+  'update:install': (
+    info: UpdateInfoDto,
+  ) => Promise<{ ok: true; path: string } | { ok: false; error: string }>;
   'schema:type': (type: TypeName) => Promise<ClassSchema | null>;
   'schema:class': (className: string) => Promise<ClassSchema | null>;
   'schema:enum': (enumName: string) => Promise<EnumSchema | null>;
@@ -313,6 +333,7 @@ export interface IpcEvents {
   'project:changed': ProjectSummaryDto;
   'file:externalChange': { fileId: string; wasDirty: boolean };
   'project:error': { message: string };
+  'update:progress': { received: number; total: number };
 }
 
 /** What the preload script exposes as `window.gtfo`. */

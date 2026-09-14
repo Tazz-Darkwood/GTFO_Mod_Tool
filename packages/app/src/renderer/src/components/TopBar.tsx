@@ -6,7 +6,30 @@ export function TopBar() {
   const refreshProject = useStore((s) => s.refreshProject);
   const closeProject = useStore((s) => s.closeProject);
   const saveAll = useStore((s) => s.saveAll);
+  const update = useStore((s) => s.update);
+  const updating = useStore((s) => s.updating);
+  const progress = useStore((s) => s.updateProgress);
+  const installUpdate = useStore((s) => s.installUpdate);
   const dirty = summary?.dirtyFiles.length ?? 0;
+
+  const updateButton = update && (
+    <button
+      className="update"
+      disabled={updating}
+      onClick={() => void installUpdate()}
+      title={
+        update.canInstall
+          ? `Download ${update.latest} next to this exe and restart into it`
+          : `Open the ${update.latest} release page`
+      }
+    >
+      {updating && progress
+        ? progress.total
+          ? `Downloading… ${Math.round((progress.received / progress.total) * 100)}%`
+          : `Downloading… ${(progress.received / 1048576).toFixed(0)} MB`
+        : `⬆ Update to ${update.latest}`}
+    </button>
+  );
 
   return (
     <header className="topbar">
@@ -19,6 +42,7 @@ export function TopBar() {
             {summary.root}
           </div>
           <div className="topbar-actions">
+            {updateButton}
             <button
               onClick={() => void saveAll()}
               disabled={dirty === 0}
@@ -38,6 +62,7 @@ export function TopBar() {
         </>
       ) : (
         <div className="topbar-actions">
+          {updateButton}
           <button onClick={() => void openFolder()} className="primary">
             Open rundown folder…
           </button>
