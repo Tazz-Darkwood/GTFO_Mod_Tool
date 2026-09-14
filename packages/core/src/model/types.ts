@@ -233,7 +233,9 @@ export type EditOp =
   /** Insert a JSONC snippet (comments kept, re-indented) as a new list entry. */
   | { op: 'insertRaw'; path: JsonPath; index?: number; text: string }
   /** Replace the value at `path` with a JSONC snippet. */
-  | { op: 'setRaw'; path: JsonPath; text: string };
+  | { op: 'setRaw'; path: JsonPath; text: string }
+  /** Remove every trailing comma inside the container at `path` ([] = whole target); the game's reader rejects them. */
+  | { op: 'stripTrailingCommas'; path: JsonPath };
 
 // ---------------------------------------------------------------------------
 // Project

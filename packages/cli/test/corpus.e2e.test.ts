@@ -48,6 +48,7 @@ describe.skipIf(!available)('corpus: Time rundown', () => {
     const shapes: Record<string, number> = {};
     for (const f of project.files.values()) shapes[f.shape] = (shapes[f.shape] ?? 0) + 1;
     expect(byCode('P001')).toEqual([]);
+    expect(byCode('P003')).toEqual([]);
     expect(shapes['unknown'] ?? 0).toBe(0);
     expect(shapes).toMatchObject({
       wrapper: 82,

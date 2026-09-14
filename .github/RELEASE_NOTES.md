@@ -4,6 +4,11 @@ Download **GTFO-Datablock-Studio-<version>-portable.exe** below and run it. No i
 
 ### New in this release
 
+- **Trailing commas are caught.** A comma before a closing `]` or `}` is legal JSONC, so the tool used to accept it silently, but the game's JSON reader throws `The JSON object contains a trailing comma` and skips the whole block. They are now a red **P003** problem with a one-click **Fix**, the Source view underlines them as you type, and no edit made through a form or the Rundown tab can leave one behind.
+- **Plugin forms are fully editable.** Under `Custom\`: double-click a key to rename it, type a reference id directly beside the picker, remove any field or list item.
+
+### From 0.3.1
+
 - **Plugin config gets a form.** Files under `Custom\` (EOS, AWO, LGTuner, …) open in a generic form: every value editable by its JSON type, add/remove fields and list items, and known keys like `MainLevelLayout` shown as datablock pickers. Source view is one click away.
 - **Collapse all / Expand all** in the Source view, so long files can be scanned and searched (Ctrl+F opens folds at matches).
 - **Update button.** From this version on, when a newer release exists an **⬆ Update** button appears top-right. It downloads the new exe next to this one, starts it and closes this window; delete the old exe afterwards.

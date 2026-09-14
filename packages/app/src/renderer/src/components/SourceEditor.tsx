@@ -29,7 +29,13 @@ import {
   lineNumbers,
   type DecorationSet,
 } from '@codemirror/view';
-import { parseTree, printParseErrorCode, type ParseError } from 'jsonc-parser';
+import {
+  createScanner,
+  parseTree,
+  printParseErrorCode,
+  type Node as JsonNode,
+  type ParseError,
+} from 'jsonc-parser';
 import { useEffect, useRef } from 'react';
 import type { Diagnostic, TextRange } from '@shared/ipc';
 import { registerSourceEditor } from '../editor/editorRegistry';
@@ -163,6 +169,39 @@ function parseErrorDiagnostics(errors: ParseError[], docLength: number): CmDiagn
   }));
 }
 
+/** Trailing commas (`[1, 2,]`) as lint errors; mirrors core's `findTrailingCommas`. */
+function trailingCommaDiagnostics(text: string, tree: JsonNode | undefined): CmDiagnostic[] {
+  const out: CmDiagnostic[] = [];
+  if (!tree) return out;
+  const visit = (node: JsonNode): void => {
+    if ((node.type === 'object' || node.type === 'array') && node.children?.length) {
+      const last = node.children[node.children.length - 1]!;
+      const from = last.offset + last.length;
+      const to = node.offset + node.length - 1;
+      if (to > from) {
+        const scanner = createScanner(text.slice(from, to), true);
+        for (let kind = scanner.scan(); kind !== 17 /* EOF */; kind = scanner.scan()) {
+          if (kind === 5 /* CommaToken */) {
+            const offset = from + scanner.getTokenOffset();
+            out.push({
+              from: offset,
+              to: offset + 1,
+              severity: 'error',
+              message:
+                "P003: Trailing comma. The game's JSON reader rejects it and skips the block.",
+              source: 'json',
+            });
+            break;
+          }
+        }
+      }
+    }
+    for (const c of node.children ?? []) visit(c);
+  };
+  visit(tree);
+  return out.sort((a, b) => a.from - b.from);
+}
+
 /**
  * Editable JSONC source view. The editor owns the draft; parseable drafts are
  * committed to main after a pause, unparseable ones are marked locally and
@@ -230,7 +269,8 @@ export function SourceEditor(p: SourceEditorProps) {
       const s = st.current;
       s.docVersion++;
       const errors: ParseError[] = [];
-      parseTree(u.state.doc.toString(), errors, {
+      const text = u.state.doc.toString();
+      const tree = parseTree(text, errors, {
         allowTrailingComma: true,
         disallowComments: false,
       });
@@ -238,7 +278,13 @@ export function SourceEditor(p: SourceEditorProps) {
       if (errors.length) {
         if (s.timer) clearTimeout(s.timer);
         u.view.dispatch(setDiagnostics(u.state, parseErrorDiagnostics(errors, u.state.doc.length)));
-      } else schedule();
+      } else {
+        // Trailing commas parse here but the game rejects them: mark them right away
+        // (the committed text gets a P003 with a Fix from the validator as well).
+        const commas = trailingCommaDiagnostics(text, tree);
+        if (commas.length) u.view.dispatch(setDiagnostics(u.state, commas));
+        schedule();
+      }
       notifyDraft();
     });
     const state = EditorState.create({

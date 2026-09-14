@@ -1,6 +1,6 @@
 {
   "name": "@gtfo/schema",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "type": "module",
   "description": "Builds the datablock schema bundle and vanilla index from UntiIted/OriginalDataBlocks",

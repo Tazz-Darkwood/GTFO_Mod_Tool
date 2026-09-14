@@ -13,6 +13,7 @@ import {
   type ScalarFormatContext,
 } from '../text/scalarFormat.js';
 import { lineIndentAt } from '../text/textStyle.js';
+import { findTrailingCommas } from '../text/trailingCommas.js';
 
 export type TextEdit = Edit;
 
@@ -235,6 +236,15 @@ export function buildEdits(
           content: reindentSnippet(op.text, lineIndentAt(text, node.offset)),
         },
       ];
+    }
+    case 'stripTrailingCommas': {
+      const node = full.length ? nodeAt(tree, full) : tree;
+      if (!node) throw new EditError(`Path ${full.join('.')} does not exist`);
+      return findTrailingCommas(text, node).map((c) => ({
+        offset: c.offset,
+        length: 1,
+        content: '',
+      }));
     }
     case 'remove': {
       const valueNode = nodeAt(tree, full);

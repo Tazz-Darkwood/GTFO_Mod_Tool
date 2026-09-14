@@ -18,6 +18,7 @@ import { replaceFileText } from '../project/projectLoader.js';
 import { blockClass } from '../schema/schemaBundle.js';
 import { schemaAtPath } from '../schema/fieldLookup.js';
 import { parseDocument, pointerToPath } from '../text/jsoncDoc.js';
+import { findTrailingCommas } from '../text/trailingCommas.js';
 import { validateProject } from '../validate/validator.js';
 import { applyTextEdits, buildEdits, EditError, type TextEdit } from './textEdits.js';
 import { UndoStack } from './undoStack.js';
@@ -34,6 +35,34 @@ export interface EditTarget {
   file: FileId;
   /** Block whose root the op's path is relative to; omit for file-root paths. */
   blockId?: BlockId;
+}
+
+/** Offsets of trailing commas in `after` that do not correspond to one already present in `before`. */
+function newTrailingCommas(
+  before: string,
+  beforeTree: Parameters<typeof findTrailingCommas>[1],
+  after: string,
+  afterTree: Parameters<typeof findTrailingCommas>[1],
+  edits: TextEdit[],
+): number[] {
+  const afterCommas = findTrailingCommas(after, afterTree);
+  if (!afterCommas.length) return [];
+  const sorted = [...edits].sort((a, b) => a.offset - b.offset);
+  const mapOffset = (offset: number): number | undefined => {
+    let delta = 0;
+    for (const e of sorted) {
+      if (offset < e.offset) break;
+      if (offset < e.offset + e.length) return undefined; // inside a replaced span
+      delta += e.content.length - e.length;
+    }
+    return offset + delta;
+  };
+  const kept = new Set<number>();
+  for (const c of findTrailingCommas(before, beforeTree)) {
+    const m = mapOffset(c.offset);
+    if (m !== undefined) kept.add(m);
+  }
+  return afterCommas.map((c) => c.offset).filter((o) => !kept.has(o));
 }
 
 export class EditSession {
@@ -78,12 +107,22 @@ export class EditSession {
       field: this.fieldFor(block, op),
       enums: this.project.schema.enums,
     });
-    const newText = applyTextEdits(file.text, edits);
-    const check = parseDocument(newText);
+    let newText = applyTextEdits(file.text, edits);
+    let check = parseDocument(newText);
     if (check.errors.length && !file.parseErrors.length) {
       throw new EditError(
         `Edit would produce invalid JSON (${check.errors.length} error(s)); refused`,
       );
+    }
+    // Safety net: the game's reader rejects trailing commas, so an edit must never
+    // introduce one. Commas that were already in the file are left alone (P003 reports them).
+    const introduced = newTrailingCommas(file.text, file.tree, newText, check.tree, edits);
+    if (introduced.length) {
+      newText = applyTextEdits(
+        newText,
+        introduced.map((offset) => ({ offset, length: 1, content: '' })),
+      );
+      check = parseDocument(newText);
     }
     return { file, edits, newText };
   }

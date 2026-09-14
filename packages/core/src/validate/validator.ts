@@ -8,6 +8,7 @@ import type {
   TextRange,
 } from '../model/types.js';
 import { lineIndexFor, properties, propertyNode, rangeOf, type Node } from '../text/jsoncDoc.js';
+import { findTrailingCommas } from '../text/trailingCommas.js';
 import { RULES, type RuleCode } from './ruleCodes.js';
 import { checkBlockShape } from './rules/blockShape.js';
 import { checkDuplicates } from './rules/duplicates.js';
@@ -57,6 +58,7 @@ export function validateProject(project: Project): Diagnostic[] {
 
   for (const file of project.files.values()) {
     checkParse(project, file, r);
+    checkTrailingCommas(project, file, r);
     if (file.shape === 'unknown' && file.tree) {
       r.add({
         code: 'P002',
@@ -98,6 +100,38 @@ function checkParse(project: Project, file: SourceFile, r: Reporter): void {
     });
   }
   void project;
+}
+
+/**
+ * P003: trailing commas parse fine here (JSONC) but System.Text.Json, which MTFO
+ * and PartialData use, throws on them and the whole block is dropped in game.
+ */
+function checkTrailingCommas(project: Project, file: SourceFile, r: Reporter): void {
+  const commas = findTrailingCommas(file.text, file.tree);
+  if (!commas.length) return;
+  const li = lineIndexFor(file, file.text);
+  const blocks = project.index.byFile.get(file.id) ?? [];
+  const fix: Diagnostic['fix'] = {
+    title:
+      commas.length === 1 ? 'Remove the trailing comma' : `Remove ${commas.length} trailing commas`,
+    edits: [{ file: file.id, op: { op: 'stripTrailingCommas', path: [] } }],
+  };
+  for (const c of commas) {
+    const { line, col } = li.position(c.offset);
+    const block = blocks.find(
+      (b) => b.node.offset <= c.offset && c.offset < b.node.offset + b.node.length,
+    );
+    const what = c.container.type === 'array' ? 'a list' : 'an object';
+    r.out.push({
+      code: 'P003',
+      severity: 'error',
+      message: `Trailing comma at the end of ${what} (${line}:${col}). The game's JSON reader rejects it and skips the whole block.`,
+      file: file.id,
+      range: { offset: c.offset, length: 1, line, col },
+      blockId: block?.id,
+      fix,
+    });
+  }
 }
 
 function checkWrapperMeta(file: SourceFile, r: Reporter): void {

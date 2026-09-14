@@ -1,6 +1,7 @@
 export * from './model/types.js';
 export * from './text/jsoncDoc.js';
 export * from './text/textStyle.js';
+export * from './text/trailingCommas.js';
 export * from './project/typeNames.js';
 export * from './project/fileShape.js';
 export * from './project/blockExtractor.js';

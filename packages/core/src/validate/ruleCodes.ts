@@ -3,6 +3,7 @@ import type { Severity } from '../model/types.js';
 export const RULES = {
   P001: { severity: 'error', title: 'JSON parse error' },
   P002: { severity: 'warning', title: 'Unrecognised file shape' },
+  P003: { severity: 'error', title: "Trailing comma (the game's JSON reader rejects it)" },
   B001: { severity: 'error', title: 'Block is missing its "datablock" type field' },
   B002: { severity: 'error', title: 'Block is missing "persistentID"' },
   B003: {
