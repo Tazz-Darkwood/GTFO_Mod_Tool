@@ -15,6 +15,8 @@ function createWindow(): BrowserWindow {
     title: 'GTFO Datablock Studio',
     backgroundColor: '#15171b',
     autoHideMenuBar: true,
+    // Packaged builds take the icon from the exe; in dev, point at the source asset.
+    icon: app.isPackaged ? undefined : path.join(__dirname, '../../build/icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,

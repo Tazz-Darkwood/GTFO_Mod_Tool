@@ -11,6 +11,12 @@ GTFO Datablock Studio: validator + typed editor for MTFO datablock JSON. npm wor
 - `npm run build -w packages/app && npx electron packages/app` — run the desktop app; `npm run dist -w packages/app` — portable exe
 - Visual check without a mouse: `GTFO_OPEN=… GTFO_NAV_CODE=R001|file:<path> GTFO_AUTO_FIX=B001 GTFO_AUTO_EDIT="old=>new" GTFO_SCREENSHOT=x.png npx electron packages/app`
 
+## Releasing
+
+- CI (`.github/workflows/ci.yml`) typechecks, tests and builds on every push/PR.
+- To publish: bump the version in every `packages/*/package.json` and the root (`npm version` does not cover workspaces; use sed), commit, then `git tag v<version> && git push --follow-tags`. `release.yml` builds the portable exe on Windows and attaches it to a GitHub release; it fails if the tag does not match `packages/app/package.json`.
+- Icon: `python packages/app/build/make-icon.py` regenerates `build/icon.png` + `build/icon.ico` (stdlib only).
+
 ## Where things live
 
 - `packages/core/src`: `text/` JSONC parsing + style; `project/` shapes, block extraction, loader; `index/` block index + baseline resolution; `schema/`; `validate/` rules (`ruleCodes.ts` is the list); `edit/` span-exact text edits + `EditSession`; `io/` fs abstraction, atomic write, save guard

@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: |
+          npm run typecheck
+          npx tsc --noEmit -p packages/app/tsconfig.node.json
+          npx tsc --noEmit -p packages/app/tsconfig.web.json
+      - name: Unit tests (corpus tests skip without the sample rundown)
+        run: npx vitest run
+      - name: Build the desktop app bundle
+        run: npm run build -w packages/app

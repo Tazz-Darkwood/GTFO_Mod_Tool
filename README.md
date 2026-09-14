@@ -60,6 +60,8 @@ Layout: `packages/core` (parse, index, validate, edit — no Electron), `package
 
 The corpus tests look for a sample rundown at `../Time - Copy/BepInEx/plugins/Mathiast - Time/Time` next to the repo (or `GTFO_CORPUS`); they skip when it is absent and never write to it.
 
+Releasing: bump the version in the `package.json` files, commit, then `git tag v<version> && git push --follow-tags`. The Release workflow builds the Windows portable exe and attaches it to a GitHub release.
+
 Unattended checks: `GTFO_OPEN=<folder> GTFO_NAV_CODE=R001 GTFO_AUTO_FIX=B001 GTFO_AUTO_EDIT="old=>new" GTFO_SCREENSHOT=out.png npx electron packages/app` opens a project, applies a fix, jumps to a problem (or `GTFO_NAV_CODE=file:<path>` opens a file), types a replacement into the source editor and writes a screenshot.
 
 Schema data comes from [UntiIted/OriginalDataBlocks](https://github.com/UntiIted/OriginalDataBlocks). Thanks to the GTFO modding community for MTFO, PartialData and the wiki.

@@ -1,7 +1,7 @@
 appId: dev.gtfo.datablockstudio
 electronVersion: 44.3.0
 productName: GTFO Datablock Studio
-copyright: MIT
+copyright: Copyright © 2026 Tazz-Darkwood (MIT)
 directories:
   output: release
   buildResources: build
@@ -19,6 +19,7 @@ asar: true
 npmRebuild: false
 nodeGypRebuild: false
 win:
+  icon: build/icon.ico
   target:
     - target: portable
       arch: [x64]
