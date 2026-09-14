@@ -83,6 +83,7 @@ export interface GenericJsonEditorProps {
 
 export function GenericJsonEditor({ fileId, text }: GenericJsonEditorProps) {
   const applyFileOp = useStore((s) => s.applyFileOp);
+  const applyFileOps = useStore((s) => s.applyFileOps);
   const parsed = useMemo(() => {
     const tree = parseTree(text, [], { allowTrailingComma: true, disallowComments: false });
     return tree ? (getNodeValue(tree) as unknown) : undefined;
@@ -99,6 +100,7 @@ export function GenericJsonEditor({ fileId, text }: GenericJsonEditorProps) {
 
   const ctx: GCtx = {
     apply: (op) => applyFileOp(fileId, op),
+    applyMany: (ops) => applyFileOps(fileId, ops),
     isOpen: (ptr, depth) => open[ptr] ?? depth < 2,
     toggle: (ptr, depth) => setOpen((o) => ({ ...o, [ptr]: !(o[ptr] ?? depth < 2) })),
     setAll: (v) => {
@@ -119,7 +121,8 @@ export function GenericJsonEditor({ fileId, text }: GenericJsonEditorProps) {
   return (
     <div className="blockeditor">
       <div className="gjson-toolbar muted">
-        Plugin config: no schema, every value is editable by its JSON type.
+        Plugin config: no schema, every value is editable by its JSON type. Double-click a key to
+        rename it.
         <span className="right" />
         <button className="small ghost" onClick={() => ctx.setAll(false)}>
           collapse all
@@ -135,6 +138,7 @@ export function GenericJsonEditor({ fileId, text }: GenericJsonEditorProps) {
 
 interface GCtx {
   apply(op: EditOp): Promise<boolean>;
+  applyMany(ops: EditOp[]): Promise<boolean>;
   isOpen(ptr: string, depth: number): boolean;
   toggle(ptr: string, depth: number): void;
   setAll(open: boolean): void;
@@ -239,7 +243,21 @@ function GValue({
                 value={v}
                 path={[...path, k]}
                 depth={depth + 1}
-                label={isArr ? `#${k}` : String(k)}
+                label={
+                  isArr ? (
+                    `#${k}`
+                  ) : (
+                    <KeyLabel
+                      name={String(k)}
+                      onRename={(nk) =>
+                        void ctx.applyMany([
+                          { op: 'setProperty', path, key: nk, value: v },
+                          { op: 'remove', path: [...path, k] },
+                        ])
+                      }
+                    />
+                  )
+                }
                 keyName={isArr ? undefined : String(k)}
                 onRemove={() => void ctx.apply({ op: 'remove', path: [...path, k] })}
               />
@@ -267,11 +285,22 @@ function GValue({
   if (kind === 'number' && refType) {
     return (
       <GRow label={label} badge={refType} actions={remove}>
-        <GenericRef
-          refType={refType}
-          value={value as number}
-          onPick={(id) => void ctx.apply({ op: 'set', path, value: id })}
-        />
+        <div className="hstack">
+          <CommitInput
+            kind="number"
+            value={String(value)}
+            onCommit={(t) => {
+              const n = Number(t);
+              if (t.trim() !== '' && Number.isFinite(n))
+                void ctx.apply({ op: 'set', path, value: n });
+            }}
+          />
+          <GenericRef
+            refType={refType}
+            value={value as number}
+            onPick={(id) => void ctx.apply({ op: 'set', path, value: id })}
+          />
+        </div>
       </GRow>
     );
   }
@@ -323,6 +352,41 @@ function GValue({
         }}
       />
     </GRow>
+  );
+}
+
+/** Object key; double-click to rename (new key is appended, old one removed — one undo step). */
+function KeyLabel({ name, onRename }: { name: string; onRename: (newName: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+  if (!editing)
+    return (
+      <span
+        title="Double-click to rename this key"
+        onDoubleClick={() => {
+          setDraft(name);
+          setEditing(true);
+        }}
+      >
+        {name}
+      </span>
+    );
+  return (
+    <input
+      autoFocus
+      type="text"
+      value={draft}
+      style={{ width: Math.max(80, draft.length * 8) }}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => setEditing(false)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          const nk = draft.trim();
+          setEditing(false);
+          if (nk && nk !== name) onRename(nk);
+        } else if (e.key === 'Escape') setEditing(false);
+      }}
+    />
   );
 }
 

@@ -133,6 +133,7 @@ interface State {
   applyMany(ops: EditOp[]): Promise<boolean>;
   /** One op against a whole file (schema-less plugin config); path is from the file root. */
   applyFileOp(fileId: string, op: EditOp): Promise<boolean>;
+  applyFileOps(fileId: string, ops: EditOp[]): Promise<boolean>;
   checkUpdate(): Promise<void>;
   installUpdate(): Promise<void>;
   applyFix(fix: DiagnosticFix): Promise<boolean>;
@@ -516,6 +517,18 @@ export const useStore = create<State>((set, get) => ({
   async applyFileOp(fileId, op) {
     await get().flushSource();
     const r = await api.invoke('edit:apply', { file: fileId }, op);
+    if (!r.ok) {
+      get().showToast('error', r.error);
+      return false;
+    }
+    set({ summary: r.summary });
+    await get().reloadLists();
+    return true;
+  },
+
+  async applyFileOps(fileId, ops) {
+    await get().flushSource();
+    const r = await api.invoke('edit:applyMany', { file: fileId }, ops);
     if (!r.ok) {
       get().showToast('error', r.error);
       return false;
