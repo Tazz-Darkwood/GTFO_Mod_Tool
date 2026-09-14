@@ -30,11 +30,22 @@ Free and open source. If it saves you time, you can [buy the developer a coffee 
 
 Badges in the type list: **FILE** means a `GameData_<Type>DataBlock_bin.json` in your folder replaces the vanilla blocks of that type; **VANILLA** means the game's own blocks are the baseline and your PartialData blocks are added on top.
 
-Keyboard: `Ctrl+S` save file, `Ctrl+Shift+S` save all, `Ctrl+Z` / `Ctrl+Y` undo / redo, `Ctrl+F` find in the source view.
+Keyboard: `Ctrl+S` save file, `Ctrl+Shift+S` save all, `Ctrl+Z` / `Ctrl+Y` undo / redo, `Ctrl+F` find in the source view, `Alt+←` / `Alt+→` (or the mouse back/forward buttons) to go back to where you were before a click moved you.
+
+**◀ ▶** at the left of the header step through the places you have visited: blocks, files, and the zone or field that was focused. History resets when you open another rundown.
 
 ### Rundown tab
 
 The first tab shows your rundown the way the game sees it: tiers → expeditions → main / secondary / third layer → layout (with every zone), objective (with its alarms and waves) and dimensions. Problem counts roll up so a level with a broken reference shows a red badge all the way up to the tier. Click anything to open it; click a zone to land on that zone in the layout form. Hover a row for actions: **+** on a tier adds an expedition, **⧉** duplicates, **⇄** moves to another tier, **✕** deletes, the checkbox enables or disables. On any link (layout, objective, alarm, wave): **pick** an existing block, **new** creates one and links it in one step, **✕** unlinks. **+ zone** appends a zone; each zone row has **alarm**, **⧉** and **✕**. Everything here is undoable with Ctrl+Z until you save.
+
+### Graph mode (level layouts)
+
+A LevelLayout block has a third view beside Form and Source: **Graph**. Every zone is a box hanging off the zone it builds from (`BuildFromLocalIndex`), placed in the direction its `StartExpansion` names (forward is up), sized by `CoverageMinMax`. Boxes show alias, subcomplex, alarm, enemy groups, events and a problem badge; a zone that builds from a LocalIndex no zone has hangs off a dashed "missing" box, and a build chain that loops is drawn dashed red. This is a schematic of the build order, not the map the game generates: the real rooms depend on seeds and tiles at load time.
+
+- Click a box to edit that zone in the panel on the right (the same fields, pickers and problem markers as the Form tab). **+ zone from here** creates a zone building from it in a direction you pick; **⧉ duplicate**, **✕ delete** (lists the zones that build from it first) and **🔔 alarm** are there too.
+- **Drag a box onto another zone** to make it build from that zone; the file keeps its `"Zone_3"` or `3` style. Dropping a box on empty space sets its `StartExpansion` to the direction it now lies from its parent. Dropping onto a zone that builds from the dragged one is refused (it would loop).
+- Wheel to zoom, drag the background to pan, **fit** to see everything. Layouts opened from the Rundown tab start in Graph mode; the **graph** action on a layout row opens it directly.
+- Everything is undoable with Ctrl+Z until you save.
 
 ### Editing
 
@@ -67,8 +78,8 @@ Layout: `packages/core` (parse, index, validate, edit — no Electron), `package
 
 The corpus tests look for a sample rundown at `../Time - Copy/BepInEx/plugins/Mathiast - Time/Time` next to the repo (or `GTFO_CORPUS`); they skip when it is absent and never write to it.
 
-Releasing: bump the version in the `package.json` files, commit, then `git tag v<version> && git push --follow-tags`. The Release workflow builds the Windows portable exe and attaches it to a GitHub release.
+Releasing: bump the version in the `package.json` files, commit, then `git tag v<version> && git push && git push origin v<version>` (plain `--follow-tags` skips lightweight tags). The Release workflow builds the Windows portable exe and attaches it to a GitHub release.
 
-Unattended checks: `GTFO_OPEN=<folder> GTFO_NAV_CODE=R001 GTFO_AUTO_FIX=B001 GTFO_AUTO_EDIT="old=>new" GTFO_SCREENSHOT=out.png npx electron packages/app` opens a project, applies a fix, jumps to a problem (or `GTFO_NAV_CODE=file:<path>` opens a file), types a replacement into the source editor and writes a screenshot.
+Unattended checks: `GTFO_OPEN=<folder> GTFO_NAV_CODE=R001 GTFO_AUTO_FIX=B001 GTFO_AUTO_EDIT="old=>new" GTFO_SCREENSHOT=out.png npx electron packages/app` opens a project, applies a fix, jumps to a problem (or `GTFO_NAV_CODE=file:<path>` opens a file, `tab:rundown:A1` expands an expedition, `graph:A1[:3[:addLeft]]` opens a layout's graph, selects a zone and adds one off it; several codes separated by commas run in order), types a replacement into the source editor, optionally folds the source (`GTFO_AUTO_FOLD=1|back`) and writes a screenshot.
 
 Schema data comes from [UntiIted/OriginalDataBlocks](https://github.com/UntiIted/OriginalDataBlocks). Thanks to the GTFO modding community for MTFO, PartialData and the wiki.

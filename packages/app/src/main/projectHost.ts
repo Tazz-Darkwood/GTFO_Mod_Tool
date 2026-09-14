@@ -30,6 +30,7 @@ import {
   saveFile,
   suggestPersistentId,
   buildRundownTree,
+  layoutDetailFor,
   addExpeditionOps,
   duplicateExpeditionOps,
   moveExpeditionOps,
@@ -37,6 +38,7 @@ import {
   addZoneOps,
   duplicateZoneOps,
   deleteZoneOps,
+  type LayoutDetail,
   type RundownTree,
   toFileId,
   valueOf,
@@ -606,6 +608,10 @@ export class ProjectHost {
     return this.tree;
   }
 
+  layoutDetail(layoutBlockId: string): LayoutDetail | null {
+    return layoutDetailFor(this.need().project, layoutBlockId);
+  }
+
   rundownOp(op: RundownOpDto): EditResultDto | EditFailureDto {
     try {
       const { project, session } = this.need();
@@ -622,7 +628,10 @@ export class ProjectHost {
               : op.kind === 'deleteExpedition'
                 ? deleteExpeditionOps(project, op.rundownBlockId, op.tier, op.index)
                 : op.kind === 'addZone'
-                  ? addZoneOps(project, op.layoutBlockId)
+                  ? addZoneOps(project, op.layoutBlockId, {
+                      buildFrom: op.buildFrom,
+                      direction: op.direction,
+                    })
                   : op.kind === 'duplicateZone'
                     ? duplicateZoneOps(project, op.layoutBlockId, op.index)
                     : deleteZoneOps(project, op.layoutBlockId, op.index);

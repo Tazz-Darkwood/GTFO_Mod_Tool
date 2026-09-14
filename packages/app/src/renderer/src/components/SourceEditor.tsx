@@ -9,13 +9,11 @@ import {
 import { json } from '@codemirror/lang-json';
 import {
   bracketMatching,
-  foldAll,
+  foldEffect,
   foldGutter,
-  foldable,
   indentOnInput,
   syntaxHighlighting,
   unfoldAll,
-  unfoldEffect,
 } from '@codemirror/language';
 import { lintGutter, setDiagnostics, type Diagnostic as CmDiagnostic } from '@codemirror/lint';
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
@@ -39,6 +37,7 @@ import {
 import { useEffect, useRef } from 'react';
 import type { Diagnostic, TextRange } from '@shared/ipc';
 import { registerSourceEditor } from '../editor/editorRegistry';
+import { foldAllRanges, unfoldedOnly } from '../editor/foldRanges';
 
 // ---------------------------------------------------------------------------
 // Highlight decoration (problem navigation)
@@ -324,14 +323,11 @@ export function SourceEditor(p: SourceEditorProps) {
       pending,
       parseErrors: () => st.current.parseErrors,
       foldAll: (keepRoot) => {
-        foldAll(v);
-        if (keepRoot) {
-          // Re-open the document's root container so the top-level keys stay visible.
-          const first = v.state.doc.line(1);
-          const range = foldable(v.state, first.from, first.to);
-          if (range) v.dispatch({ effects: unfoldEffect.of(range) });
-        }
-        v.dispatch({ effects: EditorView.scrollIntoView(0) });
+        // Not CodeMirror's foldAll: that folds the root and skips everything inside it.
+        const ranges = unfoldedOnly(v.state, foldAllRanges(v.state, keepRoot));
+        v.dispatch({
+          effects: [...ranges.map((r) => foldEffect.of(r)), EditorView.scrollIntoView(0)],
+        });
       },
       unfoldAll: () => unfoldAll(v),
       debugReplace: (find, replace) => {

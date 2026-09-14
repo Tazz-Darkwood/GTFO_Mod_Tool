@@ -34,6 +34,18 @@ export interface ZoneNode {
   alias: number;
   buildFrom: number;
   subComplex: string;
+  /** eZoneBuildFromType name (From_Start, From_Furthest, …). */
+  startPosition: string;
+  /** eZoneBuildFromExpansionType name (Towards_Forward, Towards_Right, …). */
+  startExpansion: string;
+  /** eZoneExpansionType name (Collapsed, Expansional, Directional_*, …). */
+  zoneExpansion: string;
+  /** CoverageMinMax x/y: how much area the generator gives the zone. */
+  coverage: { min: number; max: number };
+  /** A CustomGeomorph prefab path is set. */
+  geomorph: boolean;
+  /** AltitudeData.AllowedZoneAltitude name when present. */
+  altitude?: string;
   alarm: LinkNode | null;
   enemyGroups: number;
   eventCount: number;
@@ -199,12 +211,22 @@ export function layoutDetail(ctx: Ctx, layout: Block): LayoutDetail {
     let events = 0;
     for (const [k, v] of Object.entries(zone))
       if (k.startsWith('EventsOn')) events += arr(v).length;
+    const coverage = obj(zone['CoverageMinMax']);
+    const altitude = obj(zone['AltitudeData']);
     return {
       index: i,
       localIndex,
       alias: aliasOverride >= 0 ? aliasOverride : zoneAliasStart + localIndex,
       buildFrom: ctx.enumInt('eLocalZoneIndex', zone['BuildFromLocalIndex']),
       subComplex: ctx.enumName('SubComplex', zone['SubComplex']),
+      startPosition: ctx.enumName('eZoneBuildFromType', zone['StartPosition']),
+      startExpansion: ctx.enumName('eZoneBuildFromExpansionType', zone['StartExpansion']),
+      zoneExpansion: ctx.enumName('eZoneExpansionType', zone['ZoneExpansion']),
+      coverage: { min: num(coverage['x']), max: num(coverage['y']) },
+      geomorph: typeof zone['CustomGeomorph'] === 'string' && zone['CustomGeomorph'] !== '',
+      ...(altitude['AllowedZoneAltitude'] !== undefined
+        ? { altitude: ctx.enumName('eWantedZoneHeighs', altitude['AllowedZoneAltitude']) }
+        : {}),
       alarm: ctx.link(
         layout,
         ['Zones', i, 'ChainedPuzzleToEnter'],
@@ -217,6 +239,13 @@ export function layoutDetail(ctx: Ctx, layout: Block): LayoutDetail {
     };
   });
   return { kind: 'layout', zoneAliasStart, zones };
+}
+
+/** Zone data for one LevelLayout block by id (for layouts opened outside the rundown tree). */
+export function layoutDetailFor(project: Project, layoutBlockId: BlockId): LayoutDetail | null {
+  const block = project.index.byId.get(layoutBlockId);
+  if (!block || block.type !== 'LevelLayout') return null;
+  return layoutDetail(new Ctx(project), block);
 }
 
 const WAVE_LISTS = ['WavesOnElevatorLand', 'WavesOnActivate', 'WavesOnGotoWin'];

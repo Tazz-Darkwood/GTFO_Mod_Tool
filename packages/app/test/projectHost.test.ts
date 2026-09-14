@@ -264,6 +264,24 @@ describe.skipIf(!existsSync(corpus))('ProjectHost against the corpus', () => {
     const a1 = exps.find((e) => e.prefix === 'A1')!;
     const layoutId = a1.layers[0]!.layout!.blockId!;
     const zonesBefore = (a1.layers[0]!.layout!.detail as { zones: unknown[] }).zones.length;
+    // Graph data: A1's zone 3 expands to the right with coverage 70/40.
+    const detail = host.layoutDetail(layoutId)!;
+    expect(detail.zones).toHaveLength(zonesBefore);
+    expect(detail.zones[3]).toMatchObject({
+      startExpansion: 'Towards_Right',
+      coverage: { min: 70, max: 40 },
+    });
+    expect(host.layoutDetail(a1.layers[0]!.objectives[0]!.blockId!)).toBeNull();
+    const dir = host.rundownOp({
+      kind: 'addZone',
+      layoutBlockId: layoutId,
+      buildFrom: 3,
+      direction: 'Left',
+    });
+    expect(dir.ok).toBe(true);
+    const newZone = host.layoutDetail(layoutId)!.zones.at(-1)!;
+    expect(newZone).toMatchObject({ buildFrom: 3, startExpansion: 'Towards_Left' });
+    expect(host.undo(host.blockDetail(layoutId)!.file)?.ok).toBe(true);
     const r = host.rundownOp({ kind: 'addZone', layoutBlockId: layoutId });
     expect(r.ok).toBe(true);
     const after = host

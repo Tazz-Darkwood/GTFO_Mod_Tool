@@ -7,7 +7,7 @@ import { pointerOf } from '../editor/schemaUtil';
 import { useStore } from '../store';
 
 const closureCache = new Map<string, Promise<SchemaClosureDto | null>>();
-function getClosure(type: string): Promise<SchemaClosureDto | null> {
+export function getClosure(type: string): Promise<SchemaClosureDto | null> {
   let p = closureCache.get(type);
   if (!p) {
     p = api.invoke('schema:closure', type);

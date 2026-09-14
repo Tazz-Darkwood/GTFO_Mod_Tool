@@ -4,6 +4,7 @@ import { useStore } from '../store';
 import { BlockEditor } from './BlockEditor';
 import { ErrorBoundary } from './ErrorBoundary';
 import { SourceEditor } from './SourceEditor';
+import { ZoneGraph } from './ZoneGraph';
 import { GenericJsonEditor } from '../editor/GenericJsonEditor';
 import { sourceEditor } from '../editor/editorRegistry';
 
@@ -38,6 +39,10 @@ export function MainPane() {
   const tree = useStore((s) => s.rundownTree);
   const setSidebarTab = useStore((s) => s.setSidebarTab);
   const expandMany = useStore((s) => s.expandMany);
+  const canBack = useStore((s) => s.navBack.length > 0);
+  const canForward = useStore((s) => s.navForward.length > 0);
+  const goBack = useStore((s) => s.goBack);
+  const goForward = useStore((s) => s.goForward);
 
   const fileDiags = useMemo(
     () => (raw ? diagnostics.filter((d) => d.file === raw.fileId) : []),
@@ -64,9 +69,11 @@ export function MainPane() {
     !!file &&
     file.parseErrors === 0 &&
     (file.shape === 'plugin' || file.shape === 'meta' || file.shape === 'unknown');
-  const showForm = canForm && mode === 'form';
+  const canGraph = canForm && block!.type === 'LevelLayout';
+  const showGraph = canGraph && mode === 'graph';
+  const showForm = canForm && (mode === 'form' || (mode === 'graph' && !canGraph));
   const showGeneric = canGeneric && mode === 'form';
-  const showingSource = !showForm && !showGeneric;
+  const showingSource = !showForm && !showGeneric && !showGraph;
   const drafting = draft && draft.fileId === raw.fileId;
   const canSave = !!file?.dirty || !!(drafting && draft.pending);
   const refCount = references ? references.refs.length + references.mentions.length : null;
@@ -74,6 +81,18 @@ export function MainPane() {
   return (
     <div className="mainpane">
       <div className="mainpane-head">
+        <div className="navbtns">
+          <button
+            onClick={() => void goBack()}
+            disabled={!canBack}
+            title="Back to where you were (Alt+←, mouse back button)"
+          >
+            ◀
+          </button>
+          <button onClick={() => void goForward()} disabled={!canForward} title="Forward (Alt+→)">
+            ▶
+          </button>
+        </div>
         <div className="crumbs">
           {block ? (
             <>
@@ -124,9 +143,18 @@ export function MainPane() {
         <div className="mainpane-actions">
           {(canForm || canGeneric) && (
             <div className="seg">
-              <button className={mode === 'form' ? 'on' : ''} onClick={() => void setMode('form')}>
+              <button className={showForm ? 'on' : ''} onClick={() => void setMode('form')}>
                 Form
               </button>
+              {canGraph && (
+                <button
+                  className={showGraph ? 'on' : ''}
+                  onClick={() => void setMode('graph')}
+                  title="Zones as a graph: what builds from what, in which direction"
+                >
+                  Graph
+                </button>
+              )}
               <button className={mode === 'raw' ? 'on' : ''} onClick={() => void setMode('raw')}>
                 Source
               </button>
@@ -233,9 +261,11 @@ export function MainPane() {
       </div>
       <div className="mainpane-body">
         <ErrorBoundary
-          resetKey={`${block?.blockId ?? raw.fileId}:${showForm ? 'form' : showGeneric ? 'generic' : 'raw'}`}
+          resetKey={`${block?.blockId ?? raw.fileId}:${showGraph ? 'graph' : showForm ? 'form' : showGeneric ? 'generic' : 'raw'}`}
         >
-          {showForm ? (
+          {showGraph ? (
+            <ZoneGraph />
+          ) : showForm ? (
             <BlockEditor />
           ) : showGeneric ? (
             <GenericJsonEditor fileId={raw.fileId} text={raw.text} />

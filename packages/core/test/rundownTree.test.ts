@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Project, SchemaBundle, VanillaIndex } from '../src/index.js';
 import { EditSession } from '../src/edit/editEngine.js';
 import { emptyIndex, indexAddBlocks } from '../src/index/blockIndex.js';
-import { buildRundownTree } from '../src/index/rundownTree.js';
+import { buildRundownTree, layoutDetailFor } from '../src/index/rundownTree.js';
 import { computeResolutions } from '../src/index/typeResolution.js';
 import {
   addExpeditionOps,
@@ -100,6 +100,10 @@ const schema: SchemaBundle = {
       { kind: 'scalar', name: 'AliasOverride', scalar: 'Int32' },
       { kind: 'enum', name: 'BuildFromLocalIndex', enumName: 'eLocalZoneIndex' },
       { kind: 'enum', name: 'SubComplex', enumName: 'SubComplex' },
+      { kind: 'enum', name: 'StartExpansion', enumName: 'eZoneBuildFromExpansionType' },
+      { kind: 'object', name: 'CoverageMinMax', className: 'Vector2' },
+      { kind: 'scalar', name: 'CustomGeomorph', scalar: 'String' },
+      { kind: 'object', name: 'AltitudeData', className: 'ZoneAltitudeData' },
       { kind: 'ref', name: 'ChainedPuzzleToEnter', refType: 'ChainedPuzzle' },
       { kind: 'ref', name: 'LightSettings', refType: 'LightSettings' },
       {
@@ -113,6 +117,13 @@ const schema: SchemaBundle = {
         item: { kind: 'object', name: '', className: 'Event' },
       },
     ]),
+    Vector2: cls('Vector2', [
+      { kind: 'scalar', name: 'x', scalar: 'Single' },
+      { kind: 'scalar', name: 'y', scalar: 'Single' },
+    ]),
+    ZoneAltitudeData: cls('ZoneAltitudeData', [
+      { kind: 'enum', name: 'AllowedZoneAltitude', enumName: 'eWantedZoneHeighs' },
+    ]),
     EnemySpawningData: cls('EnemySpawningData', [
       { kind: 'scalar', name: 'GroupType', scalar: 'Int32' },
     ]),
@@ -123,6 +134,25 @@ const schema: SchemaBundle = {
     ]),
   },
   enums: {
+    eZoneBuildFromExpansionType: {
+      name: 'eZoneBuildFromExpansionType',
+      members: [
+        'Towards_Random',
+        'Towards_Forward',
+        'Towards_Backward',
+        'Towards_Right',
+        'Towards_Left',
+      ].map((name, value) => ({ name, value })),
+      isFlags: false,
+    },
+    eWantedZoneHeighs: {
+      name: 'eWantedZoneHeighs',
+      members: [
+        { name: 'LowMidHigh', value: 0 },
+        { name: 'OnlyHigh', value: 2 },
+      ],
+      isFlags: false,
+    },
     eLocalZoneIndex: {
       name: 'eLocalZoneIndex',
       members: [0, 1, 2, 3, 4].map((v) => ({ name: `Zone_${v}`, value: v })),
@@ -193,7 +223,7 @@ const FILES: Record<string, string> = {
     { "LocalIndex": 0, "AliasOverride": -1, "BuildFromLocalIndex": 0, "SubComplex": "DataCenter", "ChainedPuzzleToEnter": 0, "LightSettings": 43, "EnemySpawningInZone": [], "EventsOnEnter": [] },
     { "LocalIndex": "Zone_1", // alarm zone
       "AliasOverride": -1, "BuildFromLocalIndex": 0, "SubComplex": 0, "ChainedPuzzleToEnter": 300, "LightSettings": 43, "EnemySpawningInZone": [{"GroupType":1},{"GroupType":2}], "EventsOnEnter": [{"Type":1}] },
-    { "LocalIndex": 2, "AliasOverride": 777, "BuildFromLocalIndex": 1, "SubComplex": 0, "ChainedPuzzleToEnter": 4, "LightSettings": 43, "EnemySpawningInZone": [], "EventsOnEnter": [] }
+    { "LocalIndex": 2, "AliasOverride": 777, "BuildFromLocalIndex": 1, "SubComplex": 0, "StartExpansion": "towards_right", "CoverageMinMax": { "x": 70.0, "y": 40.0 }, "CustomGeomorph": "Assets/geo.prefab", "AltitudeData": { "AllowedZoneAltitude": 2 }, "ChainedPuzzleToEnter": 4, "LightSettings": 43, "EnemySpawningInZone": [], "EventsOnEnter": [] }
   ],
   "name": "Layout one",
   "internalEnabled": true,
@@ -263,6 +293,10 @@ describe('buildRundownTree', () => {
           enemyGroups: number;
           eventCount: number;
           alarm: unknown;
+          startExpansion: string;
+          coverage: { min: number; max: number };
+          geomorph: boolean;
+          altitude?: string;
         }[];
       }
     ).zones;
@@ -272,6 +306,21 @@ describe('buildRundownTree', () => {
     expect(zones[1]).toMatchObject({ enemyGroups: 2, eventCount: 1 });
     expect(zones[1]!.alarm).toMatchObject({ resolution: 'project', name: 'Class S' });
     expect(zones[2]!.alarm).toMatchObject({ resolution: 'vanilla', name: 'Vanilla alarm' });
+    // Graph fields: enum names canonicalised, coverage read, geomorph/altitude flagged.
+    expect(zones[2]).toMatchObject({
+      startExpansion: 'Towards_Right',
+      coverage: { min: 70, max: 40 },
+      geomorph: true,
+      altitude: 'OnlyHigh',
+    });
+    expect(zones[0]).toMatchObject({
+      startExpansion: '',
+      coverage: { min: 0, max: 0 },
+      geomorph: false,
+    });
+    expect(zones[0]!.altitude).toBeUndefined();
+    expect(layoutDetailFor(p, main!.layout!.blockId!)!.zones).toHaveLength(3);
+    expect(layoutDetailFor(p, 'PartialData/Alarms.json#/0')).toBeNull();
     expect(secondary).toMatchObject({ enabled: false });
     expect(secondary!.layout).toMatchObject({ resolution: 'vanilla', id: 5 });
     expect(a2.layers[0]!.layout).toMatchObject({ resolution: 'missing', id: 999 });
@@ -338,7 +387,13 @@ describe('expedition and zone ops', () => {
     const zones = () =>
       (
         buildRundownTree(p).rundowns[0]!.tiers[0]!.expeditions[0]!.layers[0]!.layout!.detail as {
-          zones: { localIndex: number; buildFrom: number; alias: number }[];
+          zones: {
+            localIndex: number;
+            buildFrom: number;
+            alias: number;
+            startExpansion: string;
+            subComplex: string;
+          }[];
         }
       ).zones;
     expect(
@@ -360,6 +415,21 @@ describe('expedition and zone ops', () => {
     expect(text.split('// alarm zone').length).toBe(3); // comment travelled with the raw copy
     expect(text).toContain('"LocalIndex": "Zone_4"'); // string representation kept, bumped to next free
     expect(zones().map((z) => z.localIndex)).toEqual([0, 1, 4, 2, 3]);
+
+    // Directional add: hangs off zone 0 towards the left, copying its complex.
+    const left = addZoneOps(p, layoutId, { buildFrom: 0, direction: 'Left' });
+    s.applyMany(left.target, left.ops);
+    const added = zones()[zones().length - 1]!;
+    expect(added).toMatchObject({
+      localIndex: 5,
+      buildFrom: 0,
+      startExpansion: 'Towards_Left',
+      alias: 505, // AliasOverride defaults to -1, not the schema's 0
+    });
+    expect(added.subComplex).toBe('DataCenter');
+    expect(p.files.get('PartialData/Layout.json')!.text).not.toContain('$enum');
+    expect(() => addZoneOps(p, layoutId, { direction: 'Sideways' })).toThrow(/direction/);
+    s.undoFile('PartialData/Layout.json');
 
     const del = deleteZoneOps(p, layoutId, 1);
     expect(del.dependents).toEqual([3]); // zone 2 (now at index 3) builds from LocalIndex 1

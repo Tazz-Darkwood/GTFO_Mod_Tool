@@ -4,6 +4,13 @@ Download **GTFO-Datablock-Studio-<version>-portable.exe** below and run it. No i
 
 ### New in this release
 
+- **Zone graph.** A LevelLayout now has a **Graph** view beside Form and Source: every zone is a box hanging off the zone it builds from, in its StartExpansion direction, sized by coverage, with alias, subcomplex, alarm, enemy groups, events and problem badges. Missing parents and build loops are drawn dashed red. Click a zone to edit it in the panel on the right (the full form for that zone), **+ zone from here** with a direction picker, duplicate, delete (with the list of zones that depend on it), pick the alarm. **Drag a zone onto another** to change what it builds from; drop it on empty space to change its direction. Wheel zooms, drag pans. Layouts opened from the Rundown tab start in Graph mode. It is a schematic of the build order, not the generated map.
+- **Back / Forward.** ◀ ▶ at the left of the header, Alt+←/→ or the mouse back button return you to where you were before a click moved you, including which zone or field was focused.
+- **Collapse all / Expand all work.** They folded only the root before; now every object and list folds, with the top-level keys left visible.
+- New zones get `AliasOverride: -1` (the game's default) instead of 0, so they no longer show up as "Z0".
+
+### From 0.3.2
+
 - **Trailing commas are caught.** A comma before a closing `]` or `}` is legal JSONC, so the tool used to accept it silently, but the game's JSON reader throws `The JSON object contains a trailing comma` and skips the whole block. They are now a red **P003** problem with a one-click **Fix**, the Source view underlines them as you type, and no edit made through a form or the Rundown tab can leave one behind.
 - **Plugin forms are fully editable.** Under `Custom\`: double-click a key to rename it, type a reference id directly beside the picker, remove any field or list item.
 

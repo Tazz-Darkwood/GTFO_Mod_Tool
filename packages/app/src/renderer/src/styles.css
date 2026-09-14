@@ -1330,3 +1330,233 @@ button.update {
 button.update:hover:not(:disabled) {
   border-color: #7fd7b7;
 }
+
+/* ---- Back / Forward ---- */
+.navbtns {
+  display: flex;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+.navbtns button {
+  padding: 2px 7px;
+  font-size: 11px;
+  line-height: 18px;
+}
+.navbtns button:disabled {
+  opacity: 0.35;
+}
+
+/* ---- Zone graph ---- */
+.zonegraph {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+.zonegraph svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  user-select: none;
+}
+.zonegraph svg.dragging {
+  cursor: grabbing;
+}
+.zg-node {
+  cursor: pointer;
+}
+.zg-node rect {
+  fill: var(--bg-3);
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.zg-node:hover rect {
+  stroke: var(--fg-muted);
+}
+.zg-node.has-problems rect {
+  stroke: var(--error);
+}
+.zg-node.selected rect {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  fill: #1f2a3a;
+}
+.zg-node.in-cycle rect {
+  stroke-dasharray: 6 4;
+}
+.zg-title {
+  font: 600 13px var(--font);
+  fill: var(--fg);
+}
+.zg-sub {
+  font: 11px var(--font);
+  fill: var(--fg-muted);
+}
+.zg-line {
+  font: 11px var(--font);
+  fill: var(--fg);
+}
+.zg-line.bad,
+.zg-ghost .zg-title,
+.zg-ghost .zg-sub {
+  fill: var(--error);
+}
+.zg-edge line {
+  stroke: var(--fg-muted);
+  stroke-width: 1.5;
+}
+.zg-edge circle {
+  fill: var(--bg-2);
+  stroke: var(--line);
+}
+.zg-edge text {
+  font: 600 10px var(--font);
+  fill: var(--fg-muted);
+}
+.zg-edge.bad line {
+  stroke: var(--error);
+  stroke-dasharray: 5 4;
+}
+.zg-edge.bad text {
+  fill: var(--error);
+}
+.zg-ghost rect {
+  fill: none;
+  stroke: var(--error);
+  stroke-dasharray: 5 4;
+}
+.zg-problems circle {
+  fill: var(--error);
+}
+.zg-problems text {
+  font: 700 10px var(--font);
+  fill: #fff;
+}
+.zg-toolbar {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.zg-toolbar button {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.zg-toolbar .muted {
+  margin: 0 6px;
+  font-size: 11px;
+}
+.zg-note {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 6px;
+  font-size: 11px;
+  max-width: 760px;
+  pointer-events: none;
+}
+
+/* ---- Zone graph: split view, drag states, inspector ---- */
+.zonegraph-split {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+.zonegraph-split .zonegraph {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.zonegraph svg.node-dragging {
+  cursor: grabbing;
+}
+.zg-node.dragged rect {
+  opacity: 0.85;
+  stroke: var(--accent);
+  stroke-dasharray: 4 3;
+}
+.zg-node.drop-target rect {
+  stroke: var(--ok);
+  stroke-width: 3;
+  fill: #1f3327;
+}
+.zg-edge.dim {
+  opacity: 0.35;
+}
+.zoneinspector {
+  flex: 0 0 440px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--line);
+  background: var(--bg-2);
+}
+.zi-head {
+  padding: 8px 10px 4px;
+  font-size: 13px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.zi-actions {
+  display: flex;
+  gap: 4px;
+  padding: 4px 10px 6px;
+  flex-wrap: wrap;
+}
+.zi-actions button {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.zg-dirmenu {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin: 0 10px 6px;
+  padding: 4px 6px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 11px;
+}
+.zg-dirmenu button {
+  padding: 2px 7px;
+  font-size: 12px;
+}
+.zi-picker {
+  position: relative;
+  margin: 0 10px 6px;
+}
+.zi-deps {
+  padding: 0 10px 6px;
+  font-size: 11px;
+}
+.zi-hint {
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.zi-form {
+  flex: 1 1 auto;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+}
+.zi-form .blockeditor {
+  padding: 6px 4px;
+  min-width: 0;
+}
+button.linkish {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: inherit;
+}

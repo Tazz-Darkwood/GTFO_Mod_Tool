@@ -112,8 +112,9 @@ app.whenReady().then(async () => {
         const nav = process.env['GTFO_NAV_CODE'] ?? null;
         const fix = process.env['GTFO_AUTO_FIX'] ?? null;
         const edit = process.env['GTFO_AUTO_EDIT'] ?? null;
+        const fold = process.env['GTFO_AUTO_FOLD'] ?? null;
         await win!.webContents.executeJavaScript(
-          `window.__gtfoAutoOpen = ${JSON.stringify(autoOpen)}; window.__gtfoAutoNav = ${JSON.stringify(nav)}; window.__gtfoAutoFix = ${JSON.stringify(fix)}; window.__gtfoAutoEdit = ${JSON.stringify(edit)}; window.dispatchEvent(new Event('gtfo-auto-open'))`,
+          `window.__gtfoAutoOpen = ${JSON.stringify(autoOpen)}; window.__gtfoAutoNav = ${JSON.stringify(nav)}; window.__gtfoAutoFix = ${JSON.stringify(fix)}; window.__gtfoAutoEdit = ${JSON.stringify(edit)}; window.__gtfoAutoFold = ${JSON.stringify(fold)}; window.dispatchEvent(new Event('gtfo-auto-open'))`,
         );
       }
       if (shot) {

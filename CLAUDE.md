@@ -9,12 +9,12 @@ GTFO Datablock Studio: validator + typed editor for MTFO datablock JSON. npm wor
 - `npm run schema:build -- --no-fetch` — regenerate `packages/schema/dist` from the cached OriginalDataBlocks clone (omit `--no-fetch` to pull)
 - `npm run validate -- "<folder>"` — CLI validator; `npx tsx packages/cli/src/tool.ts fix|set …`
 - `npm run build -w packages/app && npx electron packages/app` — run the desktop app; `npm run dist -w packages/app` — portable exe
-- Visual check without a mouse: `GTFO_OPEN=… GTFO_NAV_CODE=R001|file:<path> GTFO_AUTO_FIX=B001 GTFO_AUTO_EDIT="old=>new" GTFO_SCREENSHOT=x.png npx electron packages/app`
+- Visual check without a mouse: `GTFO_OPEN=… GTFO_NAV_CODE=R001|file:<path>|tab:rundown[:A1]|graph:A1[:zone[:addLeft]] GTFO_AUTO_FIX=B001 GTFO_AUTO_EDIT="old=>new" GTFO_AUTO_FOLD=1|back GTFO_SCREENSHOT=x.png [GTFO_SCREENSHOT_DELAY=ms] npx electron packages/app` (several NAV codes separated by commas run in order; redirect output to a file)
 
 ## Releasing
 
 - CI (`.github/workflows/ci.yml`) typechecks, tests and builds on every push/PR.
-- To publish: bump the version in every `packages/*/package.json` and the root (`npm version` does not cover workspaces; use sed), commit, then `git tag v<version> && git push --follow-tags`. `release.yml` builds the portable exe on Windows and attaches it to a GitHub release; it fails if the tag does not match `packages/app/package.json`.
+- To publish: bump the version in every `packages/*/package.json` and the root (`npm version` does not cover workspaces; use sed), commit, then `git tag v<version> && git push && git push origin v<version>` (plain `--follow-tags` skips lightweight tags). `release.yml` builds the portable exe on Windows and attaches it to a GitHub release; it fails if the tag does not match `packages/app/package.json`.
 - Icon: `python packages/app/build/make-icon.py` regenerates `build/icon.png` + `build/icon.ico` (stdlib only).
 
 ## Where things live

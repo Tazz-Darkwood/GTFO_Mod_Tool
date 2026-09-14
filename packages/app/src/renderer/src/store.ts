@@ -16,6 +16,7 @@ import type {
   TextRange,
   Tier,
   UpdateInfoDto,
+  LayoutDetail,
 } from '@shared/ipc';
 import { api } from './api';
 import { sourceEditor } from './editor/editorRegistry';
@@ -23,6 +24,7 @@ import { pointerOf } from './editor/schemaUtil';
 
 export type Severity = 'error' | 'warning' | 'info';
 export type MainView = 'welcome' | 'block' | 'file';
+export type BlockMode = 'form' | 'graph' | 'raw';
 export type SidebarTab = 'rundown' | 'types' | 'files';
 
 /** After a block is created, write its new id into this reference field ("create and link"). */
@@ -64,6 +66,56 @@ export type Dialog =
   | { kind: 'newFile'; folder?: string; then?: 'newBlock' }
   | { kind: 'deleteFile'; fileId: string };
 
+/** One place in the project the user can return to with Back. */
+export interface NavSpot {
+  blockId?: string;
+  fileId?: string;
+  highlight?: TextRange | null;
+  sidebarTab: SidebarTab;
+  blockMode: BlockMode;
+  focusPointer: string | null;
+}
+
+const NAV_HISTORY_MAX = 100;
+/** True while Back/Forward restores a spot, so the restore itself is not recorded. */
+let restoringNav = false;
+
+function spotOf(st: {
+  view: MainView;
+  selectedBlockId: string | null;
+  raw: RawTarget | null;
+  sidebarTab: SidebarTab;
+  blockMode: BlockMode;
+  focusPointer: string | null;
+}): NavSpot | null {
+  if (st.view === 'block' && st.selectedBlockId)
+    return {
+      blockId: st.selectedBlockId,
+      sidebarTab: st.sidebarTab,
+      blockMode: st.blockMode,
+      focusPointer: st.focusPointer,
+    };
+  if (st.view === 'file' && st.raw)
+    return {
+      fileId: st.raw.fileId,
+      highlight: st.raw.highlight,
+      sidebarTab: st.sidebarTab,
+      blockMode: st.blockMode,
+      focusPointer: null,
+    };
+  return null;
+}
+
+function sameSpot(a: NavSpot | null, b: NavSpot | null): boolean {
+  return (
+    !!a &&
+    !!b &&
+    a.blockId === b.blockId &&
+    a.fileId === b.fileId &&
+    a.focusPointer === b.focusPointer
+  );
+}
+
 interface State {
   summary: ProjectSummaryDto | null;
   files: FileDto[];
@@ -84,8 +136,13 @@ interface State {
   block: BlockDetailDto | null;
   raw: RawTarget | null;
   view: MainView;
-  blockMode: 'form' | 'raw';
+  blockMode: BlockMode;
   focusPointer: string | null;
+  /** Zone data of the selected LevelLayout block (graph mode); null for other blocks. */
+  layoutDetail: LayoutDetail | null;
+  /** Places the user navigated away from (Back) and returned from (Forward). */
+  navBack: NavSpot[];
+  navForward: NavSpot[];
   /** Draft state of the source editor: unsaved-to-main text and local JSON errors. */
   sourceDraft: { fileId: string; pending: boolean; parseErrors: number } | null;
   references: ReferencesDto | null;
@@ -121,7 +178,15 @@ interface State {
   selectBlock(blockId: string | null): Promise<void>;
   openFile(fileId: string, highlight?: TextRange): Promise<void>;
   navigateDiagnostic(d: Diagnostic): Promise<void>;
-  setBlockMode(m: 'form' | 'raw'): Promise<void>;
+  goBack(): Promise<void>;
+  goForward(): Promise<void>;
+  setBlockMode(m: BlockMode): Promise<void>;
+  /** Focus one zone of the selected layout without changing the view mode (graph click). */
+  selectZone(index: number): void;
+  /** Fetch graph data for the selected block when it is a LevelLayout. */
+  loadLayoutDetail(): Promise<void>;
+  /** Remember the current place before moving somewhere else (no-op while Back/Forward runs). */
+  recordNav(): void;
   toggleSeverity(s: Severity): void;
   setCodeFilter(code: string | null): void;
   setProblemsOpen(v: boolean): void;
@@ -153,7 +218,7 @@ interface State {
   toggleExpanded(key: string, force?: boolean): void;
   expandMany(keys: string[]): void;
   /** Resolved link → open the block; missing/unset → open the block that holds the reference, focused on the field. */
-  goToLink(link: LinkNode): Promise<void>;
+  goToLink(link: LinkNode, mode?: BlockMode): Promise<void>;
   goToZone(layoutBlockId: string, index: number): Promise<void>;
   /** Set a field (block-relative path) on any block by id; used for link/unlink/enable toggles. */
   setField(blockId: string, path: JsonPath, value: unknown): Promise<boolean>;
@@ -191,6 +256,9 @@ export const useStore = create<State>((set, get) => ({
   view: 'welcome',
   blockMode: 'form',
   focusPointer: null,
+  layoutDetail: null,
+  navBack: [],
+  navForward: [],
   sourceDraft: null,
   references: null,
   dialog: null,
@@ -238,6 +306,8 @@ export const useStore = create<State>((set, get) => ({
         sourceDraft: null,
         references: null,
         dialog: null,
+        navBack: [],
+        navForward: [],
       });
       set({ expanded: {} });
       await get().reloadLists();
@@ -280,6 +350,8 @@ export const useStore = create<State>((set, get) => ({
       sourceDraft: null,
       references: null,
       dialog: null,
+      navBack: [],
+      navForward: [],
     });
   },
 
@@ -340,6 +412,7 @@ export const useStore = create<State>((set, get) => ({
       }
       if (block) set({ block });
     }
+    await get().loadLayoutDetail();
     const raw = get().raw;
     if (raw && get().files.some((f) => f.id === raw.fileId)) {
       const draft = get().sourceDraft;
@@ -407,6 +480,7 @@ export const useStore = create<State>((set, get) => ({
     }
     const block = await api.invoke('blocks:get', blockId);
     if (!block) return;
+    if (blockId !== get().selectedBlockId || get().view !== 'block') get().recordNav();
     const text = await api.invoke('file:getText', block.file);
     const nonce = (get().raw?.nonce ?? 0) + 1;
     set({
@@ -416,17 +490,23 @@ export const useStore = create<State>((set, get) => ({
       view: 'block',
       focusPointer: blockId === get().selectedBlockId ? get().focusPointer : null,
       raw: { fileId: block.file, text, highlight: block.range, nonce },
-      // Plugin/meta content has no schema form.
+      // Plugin/meta content has no schema form; graph mode only exists for layouts.
       blockMode:
-        block.plugin || block.fileShape === 'plugin' || !block.type ? 'raw' : get().blockMode,
+        block.plugin || block.fileShape === 'plugin' || !block.type
+          ? 'raw'
+          : get().blockMode === 'graph' && block.type !== 'LevelLayout'
+            ? 'form'
+            : get().blockMode,
       references: null,
     });
     void get().loadReferences();
+    await get().loadLayoutDetail();
     if (block.type && block.type !== get().selectedType) await get().selectType(block.type);
   },
 
   async openFile(fileId, highlight) {
     await get().flushSource();
+    if (get().view !== 'file' || get().raw?.fileId !== fileId) get().recordNav();
     const text = await api.invoke('file:getText', fileId);
     const nonce = (get().raw?.nonce ?? 0) + 1;
     set({
@@ -440,6 +520,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   async navigateDiagnostic(d) {
+    get().recordNav();
     if (d.blockId) {
       await get().selectBlock(d.blockId);
       const raw = get().raw;
@@ -458,9 +539,52 @@ export const useStore = create<State>((set, get) => ({
     await get().openFile(d.file, d.range);
   },
 
+  recordNav() {
+    if (restoringNav) return;
+    const here = spotOf(get());
+    if (!here) return;
+    const back = get().navBack;
+    if (sameSpot(back[back.length - 1] ?? null, here)) return;
+    set({ navBack: [...back, here].slice(-NAV_HISTORY_MAX), navForward: [] });
+  },
+
+  async goBack() {
+    const back = get().navBack;
+    const spot = back[back.length - 1];
+    if (!spot) return;
+    const here = spotOf(get());
+    set({
+      navBack: back.slice(0, -1),
+      navForward: here ? [...get().navForward, here] : get().navForward,
+    });
+    await restoreSpot(spot);
+  },
+
+  async goForward() {
+    const fwd = get().navForward;
+    const spot = fwd[fwd.length - 1];
+    if (!spot) return;
+    const here = spotOf(get());
+    set({
+      navForward: fwd.slice(0, -1),
+      navBack: here ? [...get().navBack, here] : get().navBack,
+    });
+    await restoreSpot(spot);
+  },
+
   async setBlockMode(m) {
     await get().flushSource();
     set({ blockMode: m });
+  },
+  selectZone(index) {
+    set({ focusPointer: pointerOf(['Zones', index]) });
+  },
+  async loadLayoutDetail() {
+    const b = get().block;
+    if (b && b.type === 'LevelLayout' && get().view === 'block') {
+      const detail = await api.invoke('layout:detail', b.blockId);
+      if (get().block?.blockId === b.blockId) set({ layoutDetail: detail });
+    } else if (get().layoutDetail) set({ layoutDetail: null });
   },
   toggleSeverity(s) {
     set((st) => ({ severityFilter: { ...st.severityFilter, [s]: !st.severityFilter[s] } }));
@@ -755,10 +879,13 @@ The new ${u.assetName} is downloaded next to the current exe, started, and this 
     });
   },
 
-  async goToLink(link) {
+  async goToLink(link, mode) {
+    get().recordNav();
     if (link.blockId) {
       await get().selectBlock(link.blockId);
-      set({ sidebarTab: 'rundown', blockMode: 'form' });
+      // Layouts open as the zone graph unless the caller asked for the form.
+      const m = mode ?? (link.targetType === 'LevelLayout' ? 'graph' : 'form');
+      set({ sidebarTab: 'rundown', blockMode: m });
       return;
     }
     // Unset, missing or vanilla-only: show the field that holds the reference.
@@ -767,8 +894,11 @@ The new ${u.assetName} is downloaded next to the current exe, started, and this 
   },
 
   async goToZone(layoutBlockId, index) {
+    get().recordNav();
     await get().selectBlock(layoutBlockId);
-    set({ sidebarTab: 'rundown', focusPointer: pointerOf(['Zones', index]), blockMode: 'form' });
+    // Stay in the graph when it is showing; otherwise the form lands on the zone.
+    const mode = get().blockMode === 'graph' ? 'graph' : 'form';
+    set({ sidebarTab: 'rundown', focusPointer: pointerOf(['Zones', index]), blockMode: mode });
   },
 
   async setField(blockId, path, value) {
@@ -882,6 +1012,38 @@ The new ${u.assetName} is downloaded next to the current exe, started, and this 
 }));
 
 /** Subscribe to main-process pushes once. */
+/** Bring a remembered place back: the block (or file), the sidebar tab, mode and focused field. */
+async function restoreSpot(spot: NavSpot): Promise<void> {
+  const st = useStore.getState();
+  restoringNav = true;
+  try {
+    if (spot.blockId) {
+      const exists = await api.invoke('blocks:get', spot.blockId);
+      if (!exists) {
+        st.showToast('error', 'That block no longer exists.');
+        return;
+      }
+      await st.selectBlock(spot.blockId);
+      const block = useStore.getState().block;
+      const raw = useStore.getState().raw;
+      useStore.setState({
+        sidebarTab: spot.sidebarTab,
+        blockMode:
+          block && (block.plugin || block.fileShape === 'plugin' || !block.type)
+            ? 'raw'
+            : spot.blockMode,
+        focusPointer: spot.focusPointer,
+        raw: raw ? { ...raw, nonce: raw.nonce + 1 } : raw,
+      });
+    } else if (spot.fileId) {
+      await st.openFile(spot.fileId, spot.highlight ?? undefined);
+      useStore.setState({ sidebarTab: spot.sidebarTab, blockMode: spot.blockMode });
+    }
+  } finally {
+    restoringNav = false;
+  }
+}
+
 export function wireEvents(): void {
   api.on('project:changed', (summary) => {
     useStore.setState({ summary });
@@ -914,6 +1076,8 @@ export function wireEvents(): void {
     __gtfoAutoFix?: string | null;
     /** "find=>replace" typed into the source editor after navigation (GTFO_AUTO_EDIT). */
     __gtfoAutoEdit?: string | null;
+    /** "1" collapses all in the source view after navigation; "back" also presses Back first (GTFO_AUTO_FOLD). */
+    __gtfoAutoFold?: string | null;
   };
   const tryAuto = () => {
     if (!w.__gtfoAutoOpen) return;
@@ -928,11 +1092,38 @@ export function wireEvents(): void {
           const d = useStore.getState().diagnostics.find((x) => x.code === fixCode && x.fix);
           if (d) await useStore.getState().applyFix(d.fix!);
         }
-        const code = w.__gtfoAutoNav;
-        if (code) {
+        // Several codes separated by commas run in order (lets a check exercise Back).
+        for (const code of (w.__gtfoAutoNav ?? '').split(',').filter(Boolean)) {
           if (code.startsWith('file:')) {
             await useStore.getState().openFile(code.slice(5));
             useStore.getState().setSidebarTab('files');
+          } else if (code.startsWith('graph:')) {
+            // graph:<prefix> — open that expedition's main layout in graph mode.
+            const st = useStore.getState();
+            const [prefix, zoneIdx, extra] = code.slice(6).split(':');
+            for (const rd of st.rundownTree?.rundowns ?? [])
+              for (const t of rd.tiers)
+                for (const e of t.expeditions)
+                  if (e.prefix === prefix && e.layers[0]?.layout?.blockId) {
+                    const layoutBlockId = e.layers[0].layout.blockId;
+                    await st.goToLink(e.layers[0].layout, 'graph');
+                    if (zoneIdx) useStore.getState().selectZone(Number(zoneIdx));
+                    // graph:A1:3:addLeft — create a zone off the selected one (unsaved).
+                    if (extra?.startsWith('add')) {
+                      const cur = useStore.getState();
+                      const z = cur.layoutDetail?.zones[Number(zoneIdx)];
+                      const next = cur.layoutDetail?.zones.length ?? 0;
+                      if (z) {
+                        await cur.rundownOp({
+                          kind: 'addZone',
+                          layoutBlockId,
+                          buildFrom: z.localIndex,
+                          direction: extra.slice(3),
+                        });
+                        useStore.getState().selectZone(next);
+                      }
+                    }
+                  }
           } else if (code.startsWith('tab:rundown')) {
             // tab:rundown[:<prefix>] — show the navigator, optionally expanded on one expedition.
             const st = useStore.getState();
@@ -959,6 +1150,13 @@ export function wireEvents(): void {
             if (d) await useStore.getState().navigateDiagnostic(d);
             await useStore.getState().setBlockMode('raw');
           }
+        }
+        const fold = w.__gtfoAutoFold;
+        if (fold) {
+          setTimeout(async () => {
+            if (fold === 'back') await useStore.getState().goBack();
+            setTimeout(() => sourceEditor()?.foldAll(true), 400);
+          }, 800);
         }
         const edit = w.__gtfoAutoEdit;
         if (edit) {

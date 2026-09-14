@@ -404,7 +404,7 @@ function LinkRow({
         actions={
           <>
             {link.blockId && (
-              <Act title="Open in the form" onClick={() => void goToLink(link)}>
+              <Act title="Open in the form" onClick={() => void goToLink(link, 'form')}>
                 form
               </Act>
             )}
@@ -473,6 +473,7 @@ function LayerRows({
   const setField = useStore((s) => s.setField);
   const rundownOp = useStore((s) => s.rundownOp);
   const goToZone = useStore((s) => s.goToZone);
+  const goToLink = useStore((s) => s.goToLink);
   const name = l.layer === 'main' ? 'Main' : l.layer === 'secondary' ? 'Secondary' : 'Third';
   const enabledField =
     l.layer === 'secondary'
@@ -557,12 +558,19 @@ function LayerRows({
               </Act>
             )}
             {layout.blockId && (
-              <Act
-                title="Add a zone"
-                onClick={() => void rundownOp({ kind: 'addZone', layoutBlockId: layout.blockId! })}
-              >
-                + zone
-              </Act>
+              <>
+                <Act title="Show the zone graph" onClick={() => void goToLink(layout, 'graph')}>
+                  graph
+                </Act>
+                <Act
+                  title="Add a zone"
+                  onClick={() =>
+                    void rundownOp({ kind: 'addZone', layoutBlockId: layout.blockId! })
+                  }
+                >
+                  + zone
+                </Act>
+              </>
             )}
           </>
         }

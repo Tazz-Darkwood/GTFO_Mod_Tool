@@ -46,6 +46,7 @@ export function registerIpc(host: ProjectHost, getWindow: () => BrowserWindow | 
   handle('blocks:create', async (req) => host.createBlock(req));
   handle('blocks:delete', async (blockId) => host.deleteBlock(blockId));
   handle('rundown:tree', async () => host.rundownTree());
+  handle('layout:detail', async (id) => host.layoutDetail(id));
   handle('rundown:op', async (op) => host.rundownOp(op));
   handle('diagnostics:list', async (fileId) => host.diagnostics(fileId));
   handle('edit:apply', async (target, op) => host.applyEdit(target, op));

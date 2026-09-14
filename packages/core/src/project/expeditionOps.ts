@@ -162,20 +162,50 @@ export function nextLocalIndex(project: Project, zones: unknown[]): number {
   return n;
 }
 
-export function addZoneOps(project: Project, layoutBlockId: BlockId): OpsPlan {
+export interface AddZoneOptions {
+  /** LocalIndex of the zone the new one builds from (default: the last zone). */
+  buildFrom?: number;
+  /** Forward | Backward | Right | Left | Random → StartExpansion Towards_<direction>. */
+  direction?: string;
+}
+
+/** `{ $enum }` for LocalIndex values with a named member (Zone_0..Zone_20), else the number. */
+export function localIndexValue(project: Project, n: number): unknown {
+  return enumValue(project, 'eLocalZoneIndex', n);
+}
+
+export function addZoneOps(
+  project: Project,
+  layoutBlockId: BlockId,
+  opts: AddZoneOptions = {},
+): OpsPlan {
   const { block } = blockOf(project, layoutBlockId, 'LevelLayout');
   const value = valueOf(block.node) as Record<string, unknown>;
   const zones = Array.isArray(value['Zones']) ? (value['Zones'] as unknown[]) : [];
   const zone = defaultObject(project, 'ExpeditionZoneData');
   const local = nextLocalIndex(project, zones);
   zone['LocalIndex'] = local;
-  const prev = zones.length ? zoneLocalIndex(project, zones[zones.length - 1]) : 0;
-  zone['BuildFromLocalIndex'] = zones.length ? prev : 0;
-  if (zones.length) {
-    // New zones usually continue the previous zone's complex.
-    const last = zones[zones.length - 1] as Record<string, unknown>;
-    if (last['SubComplex'] !== undefined) zone['SubComplex'] = last['SubComplex'];
-    if (last['LightSettings'] !== undefined) zone['LightSettings'] = last['LightSettings'];
+  // The schema default is 0, but 0 is a real override (alias "Z0"); the game's own default is -1.
+  if ('AliasOverride' in zone) zone['AliasOverride'] = -1;
+  const parentIndex =
+    opts.buildFrom !== undefined
+      ? zones.findIndex((z) => zoneLocalIndex(project, z) === opts.buildFrom)
+      : zones.length - 1;
+  const parent = parentIndex >= 0 ? (zones[parentIndex] as Record<string, unknown>) : undefined;
+  // A brand-new object is written as plain JSON, so enums are numbers here (like the defaults).
+  zone['BuildFromLocalIndex'] = opts.buildFrom ?? (parent ? zoneLocalIndex(project, parent) : 0);
+  if (parent) {
+    // New zones usually continue their parent's complex and lighting.
+    if (parent['SubComplex'] !== undefined) zone['SubComplex'] = parent['SubComplex'];
+    if (parent['LightSettings'] !== undefined) zone['LightSettings'] = parent['LightSettings'];
+  }
+  if (opts.direction) {
+    const name = `Towards_${opts.direction}`;
+    const m = project.schema.enums['eZoneBuildFromExpansionType']?.members.find(
+      (x) => x.name === name,
+    );
+    if (!m) throw new EditError(`Unknown direction ${opts.direction}`);
+    zone['StartExpansion'] = m.value;
   }
   const ops: EditOp[] = Array.isArray(value['Zones'])
     ? [{ op: 'insert', path: ['Zones'], value: zone }]

@@ -28,6 +28,12 @@ export function App() {
         st.closeDialog();
         return;
       }
+      if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !st.dialog) {
+        e.preventDefault();
+        if (e.key === 'ArrowLeft') void st.goBack();
+        else void st.goForward();
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         if (e.shiftKey) void st.saveAll();
@@ -41,8 +47,19 @@ export function App() {
         void st.redo();
       }
     };
+    // Mouse back/forward buttons (3/4) like a browser.
+    const onMouse = (e: MouseEvent) => {
+      const st = useStore.getState();
+      if (!st.summary || st.dialog) return;
+      if (e.button === 3) void st.goBack();
+      else if (e.button === 4) void st.goForward();
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('mouseup', onMouse);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('mouseup', onMouse);
+    };
   }, []);
 
   if (!summary) {
